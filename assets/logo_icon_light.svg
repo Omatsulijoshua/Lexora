@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="100%" height="100%">
+  <defs>
+    <mask id="pillar-mask-iconlight">
+      <rect x="0" y="0" width="200" height="200" fill="white"/>
+      <line x1="114" y1="64" x2="114" y2="80" stroke="black" stroke-width="2.5" stroke-linecap="round"/>
+      <line x1="122" y1="64" x2="122" y2="80" stroke="black" stroke-width="2.5" stroke-linecap="round"/>
+    </mask>
+  </defs>
+  <!-- Left Shield Outline -->
+  <path d="M 100,22 L 54,32 C 42,95 45,142 100,178" fill="none" stroke="#081A33" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Right Shield Outline (Upper) -->
+  <path d="M 100,22 L 146,32 C 153,52 153,68 150,78" fill="none" stroke="#C6A15B" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Right Shield Outline (Lower) -->
+  <path d="M 137,132 C 128,150 118,165 100,178" fill="none" stroke="#C6A15B" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+  
+  <!-- Navy Diagonal of X -->
+  <path d="M 92,140 L 132,84" fill="none" stroke="#081A33" stroke-width="11" stroke-linecap="round"/>
+  
+  <!-- Monogram L -->
+  <path d="M 66,66 L 79,66 M 73,66 L 73,124 L 104,124" fill="none" stroke="#081A33" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"/>
+  
+  <!-- Gold Column/Diagonal of X -->
+  <g mask="url(#pillar-mask-iconlight)">
+    <path d="M 118,65 L 118,84 L 146,138" fill="none" stroke="#C6A15B" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+  
+  <!-- Column Capital -->
+  <path d="M 104,54 L 132,54" fill="none" stroke="#C6A15B" stroke-width="4.5" stroke-linecap="round"/>
+  <path d="M 104,54 C 100,54 100,60 106,60" fill="none" stroke="#C6A15B" stroke-width="2.5" stroke-linecap="round"/>
+  <path d="M 132,54 C 136,54 136,60 130,60" fill="none" stroke="#C6A15B" stroke-width="2.5" stroke-linecap="round"/>
+  <path d="M 110,58 L 126,58" fill="none" stroke="#C6A15B" stroke-width="3.5" stroke-linecap="round"/>
+</svg>
