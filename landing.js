@@ -262,32 +262,15 @@ Date: July 21, 2026
         await log("SaaS instance initialization successful!", 600);
         await log("Redirecting to your workspace dashboard...", 400);
 
-        // Populate Dashboard details
-        portalFirmDisplay.textContent = firmName.toUpperCase();
-        portalPracticeDisplay.textContent = practice;
-        
-        portalStaffList.innerHTML = '';
-        if (invites) {
-            const list = invites.split(',').map(e => e.trim());
-            list.forEach(email => {
-                const li = document.createElement('li');
-                li.textContent = `${email} (Pending Invite)`;
-                portalStaffList.appendChild(li);
+        // Redirect to standalone dashboard.html with query parameters
+        setTimeout(() => {
+            const params = new URLSearchParams({
+                firm: firmName,
+                practice: practice,
+                staff: invites
             });
-        } else {
-            const li = document.createElement('li');
-            li.textContent = "No staff members invited yet.";
-            portalStaffList.appendChild(li);
-        }
-
-        // Switch to dashboard
-        deployStep.classList.remove('active');
-        dashStep.classList.add('active');
-        
-        // Scroll to container
-        document.getElementById('launch-card-container').scrollIntoView();
-        
-        // Trigger lucide icons inside dashboard
+            window.location.href = `dashboard.html?${params.toString()}`;
+        }, 1500);
         lucide.createIcons();
     }
 });

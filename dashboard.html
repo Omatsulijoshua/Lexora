@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lexora Workspace Dashboard — Legal SaaS Portal</title>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- Stylesheet -->
+  <link rel="stylesheet" href="dashboard.css">
+</head>
+<body class="dark-theme">
+
+  <!-- Dashboard Layout Container -->
+  <div class="dashboard-container">
+    
+    <!-- Sidebar Navigation -->
+    <aside class="dashboard-sidebar">
+      <div class="sidebar-brand">
+        <svg viewBox="0 0 200 200" class="brand-logo-icon" id="dashboard-logo-icon">
+          <!-- Injected on startup -->
+        </svg>
+        <span class="brand-text">LEXORA</span>
+      </div>
+      
+      <div class="sidebar-menu">
+        <a href="#" class="menu-item active" data-tab="tab-overview">
+          <i data-lucide="layout-dashboard"></i> Overview
+        </a>
+        <a href="#" class="menu-item" data-tab="tab-clients">
+          <i data-lucide="users"></i> Clients
+        </a>
+        <a href="#" class="menu-item" data-tab="tab-matters">
+          <i data-lucide="folder-kanban"></i> Matters
+        </a>
+        <a href="#" class="menu-item" data-tab="tab-invoices">
+          <i data-lucide="credit-card"></i> Invoices & Billing
+        </a>
+        <a href="#" class="menu-item" data-tab="tab-aidraft">
+          <i data-lucide="brain-circuit"></i> AI Drafting
+        </a>
+      </div>
+
+      <div class="sidebar-footer">
+        <a href="landing.html" class="sidebar-back-link">
+          <i data-lucide="log-out"></i> Leave Workspace
+        </a>
+      </div>
+    </aside>
+
+    <!-- Main Workspace Content -->
+    <main class="dashboard-main">
+      
+      <!-- Top Navigation Bar -->
+      <header class="top-nav-bar">
+        <div class="top-nav-left">
+          <h2 id="display-firm-name">OMATSULI LEGAL ASSOCIATES</h2>
+          <span class="badge-specialty" id="display-practice-area">Corporate Law Practice</span>
+        </div>
+        <div class="top-nav-right">
+          <button class="btn btn-secondary btn-icon" id="btn-theme-toggle" title="Toggle Theme">
+            <i data-lucide="sun"></i>
+          </button>
+          <div class="user-profile-badge">
+            <div class="user-avatar-circle" id="user-avatar">A</div>
+            <div class="user-meta">
+              <span class="user-name">Attorney Administrator</span>
+              <span class="user-role">Tenant Host</span>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <!-- View Containers -->
+      <div class="view-content-wrapper">
+        
+        <!-- View 1: Overview Dashboard -->
+        <section class="tab-view active" id="tab-overview">
+          <!-- Metric Grid -->
+          <div class="metrics-grid">
+            <div class="metric-card">
+              <div class="metric-header">
+                <span>Total Trust Deposits</span>
+                <i data-lucide="safe" class="metric-icon"></i>
+              </div>
+              <h2 id="metric-trust-balance">$142,500</h2>
+              <p class="metric-subtext"><span class="green-text">↑ 12%</span> vs last month</p>
+            </div>
+            <div class="metric-card">
+              <div class="metric-header">
+                <span>Billable Hours (Month)</span>
+                <i data-lucide="clock" class="metric-icon"></i>
+              </div>
+              <h2 id="metric-hours-worked">84.5 hrs</h2>
+              <p class="metric-subtext">Target: 100 hours</p>
+            </div>
+            <div class="metric-card">
+              <div class="metric-header">
+                <span>Active Client Matters</span>
+                <i data-lucide="briefcase" class="metric-icon"></i>
+              </div>
+              <h2 id="metric-active-matters">12 Cases</h2>
+              <p class="metric-subtext">3 pending intake review</p>
+            </div>
+            <div class="metric-card">
+              <div class="metric-header">
+                <span>Outstanding Invoices</span>
+                <i data-lucide="receipt" class="metric-icon"></i>
+              </div>
+              <h2 id="metric-outstanding">$18,720</h2>
+              <p class="metric-subtext"><span class="yellow-text">4 Overdue bills</span></p>
+            </div>
+          </div>
+
+          <!-- Overview Details Section -->
+          <div class="details-grid">
+            <!-- Left panel: Recent matters -->
+            <div class="dashboard-panel">
+              <div class="panel-header">
+                <h3>Recent Active Cases</h3>
+                <a href="#" class="panel-action-link" onclick="switchTab('tab-matters')">View Kanban</a>
+              </div>
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Matter Name</th>
+                    <th>Client</th>
+                    <th>Billing Status</th>
+                    <th>Progress</th>
+                  </tr>
+                </thead>
+                <tbody id="overview-matters-tbody">
+                  <!-- Injected -->
+                </tbody>
+              </table>
+            </div>
+
+            <!-- Right panel: Staff & AI logs -->
+            <div class="dashboard-panel">
+              <div class="panel-header">
+                <h3>Firm Workspace Staff</h3>
+              </div>
+              <ul class="staff-list" id="portal-staff-list">
+                <!-- Injected from URL parameters -->
+              </ul>
+              
+              <div class="ai-assistant-widget">
+                <div class="ai-widget-header">
+                  <i data-lucide="brain-circuit"></i>
+                  <span>Lexora Legal AI Assistant</span>
+                </div>
+                <p>Quick Draft: Paste legal parameters below and ask the AI assistant to summarize or format.</p>
+                <div class="ai-widget-input-row">
+                  <input type="text" id="ai-quick-query" placeholder="Ask AI: e.g. Summarize Delaware LLC requirements...">
+                  <button class="btn btn-gold" id="btn-quick-ai">Ask</button>
+                </div>
+                <div class="ai-widget-output" id="ai-quick-output" style="display: none;">
+                  <!-- Injected response -->
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- View 2: Client Database -->
+        <section class="tab-view" id="tab-clients">
+          <div class="panel-actions-top">
+            <div class="search-bar-wrapper">
+              <i data-lucide="search"></i>
+              <input type="text" id="search-clients" placeholder="Filter clients by name or type..." oninput="filterClients()">
+            </div>
+            <button class="btn btn-gold" onclick="openClientModal()">
+              <i data-lucide="user-plus" style="width: 16px; height: 16px; margin-right: 6px;"></i>
+              Add New Client
+            </button>
+          </div>
+
+          <div class="dashboard-panel" style="margin-top: 1.5rem;">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Client Name</th>
+                  <th>Email</th>
+                  <th>Practice Type</th>
+                  <th>Trust Balance</th>
+                  <th>Status</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody id="clients-table-body">
+                <!-- Injected dynamically -->
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- View 3: Case Matters Kanban -->
+        <section class="tab-view" id="tab-matters">
+          <div class="panel-actions-top">
+            <div class="section-title-box">
+              <h3>Matter Kanban Status Workflow</h3>
+              <p>Drag, drop, or update case pipeline phases to keep the firm operations organized.</p>
+            </div>
+            <button class="btn btn-gold" onclick="openCaseModal()">
+              <i data-lucide="plus-circle" style="width: 16px; height: 16px; margin-right: 6px;"></i>
+              New Case File
+            </button>
+          </div>
+
+          <div class="kanban-board">
+            <!-- Column 1: Intake -->
+            <div class="kanban-column" id="col-intake">
+              <div class="column-header">
+                <span>INTAKE REVIEW</span>
+                <span class="col-count" id="count-intake">0</span>
+              </div>
+              <div class="column-cards-container" id="cards-intake"></div>
+            </div>
+            <!-- Column 2: Research -->
+            <div class="kanban-column" id="col-research">
+              <div class="column-header">
+                <span>RESEARCH & RESEARCH</span>
+                <span class="col-count" id="count-research">0</span>
+              </div>
+              <div class="column-cards-container" id="cards-research"></div>
+            </div>
+            <!-- Column 3: Drafting -->
+            <div class="kanban-column" id="col-drafting">
+              <div class="column-header">
+                <span>CONTRACT DRAFTING</span>
+                <span class="col-count" id="count-drafting">0</span>
+              </div>
+              <div class="column-cards-container" id="cards-drafting"></div>
+            </div>
+            <!-- Column 4: Court / Closed -->
+            <div class="kanban-column" id="col-closed">
+              <div class="column-header">
+                <span>CASE COMPLETED</span>
+                <span class="col-count" id="count-closed">0</span>
+              </div>
+              <div class="column-cards-container" id="cards-closed"></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- View 4: Invoicing & Billing -->
+        <section class="tab-view" id="tab-invoices">
+          <div class="billing-workspace">
+            
+            <!-- Left Panel: Invoice Builder -->
+            <div class="dashboard-panel billing-builder-panel">
+              <h3>Generate Attorney Invoice</h3>
+              <p class="panel-desc">Select a registered client, input logged hours, and configure hourly rates to print standard trust invoice drafts.</p>
+              
+              <form class="billing-form" id="invoice-builder-form" onsubmit="event.preventDefault(); generateInvoice();">
+                <div class="form-group">
+                  <label for="inv-client-select">Select Client</label>
+                  <select id="inv-client-select" required>
+                    <!-- Injected dynamically -->
+                  </select>
+                </div>
+                <div class="form-grid-2">
+                  <div class="form-group">
+                    <label for="inv-hours">Billable Hours Worked</label>
+                    <input type="number" step="0.5" id="inv-hours" value="12" required>
+                  </div>
+                  <div class="form-group">
+                    <label for="inv-rate">Attorney Hourly Rate ($)</label>
+                    <input type="number" id="inv-rate" value="350" required>
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label for="inv-desc">Service Description</label>
+                  <textarea id="inv-desc" rows="3" placeholder="e.g. Drafting Mutual NDA, reviewing corporate bylaws, LLC structure setup..." required></textarea>
+                </div>
+                
+                <button type="submit" class="btn btn-gold btn-full">
+                  Create Invoice Sheet
+                </button>
+              </form>
+            </div>
+
+            <!-- Right Panel: Invoice Render / Print preview -->
+            <div class="dashboard-panel invoice-preview-panel">
+              <div class="preview-actions">
+                <span>Invoice Sheet Output</span>
+                <button class="btn btn-secondary btn-small" id="btn-print-invoice" onclick="printInvoiceSheet()" disabled>
+                  <i data-lucide="printer" style="width: 14px; height: 14px; margin-right: 6px;"></i> Print Invoice
+                </button>
+              </div>
+
+              <!-- Raw Invoice Sheet Template -->
+              <div class="invoice-sheet-container" id="invoice-sheet">
+                <div class="invoice-empty-state">
+                  <i data-lucide="receipt"></i>
+                  <p>Fill out the builder form and click "Create Invoice Sheet" to render invoice assets.</p>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </section>
+
+        <!-- View 5: AI Contract Drafting Workbench -->
+        <section class="tab-view" id="tab-aidraft">
+          <div class="draft-workbench-layout">
+            
+            <!-- Left Selector panel -->
+            <div class="dashboard-panel draft-selector-panel">
+              <h3>Legal AI Document Workbench</h3>
+              <p>Configure and generate templates. Lexora's AI automatically merges workspace metadata and client profiles directly into legal agreement clauses.</p>
+              
+              <div class="form-group" style="margin-top: 1.5rem;">
+                <label for="draft-client-select">Target Client</label>
+                <select id="draft-client-select">
+                  <!-- Populated from Client DB -->
+                </select>
+              </div>
+
+              <div class="form-group" style="margin-top: 1rem;">
+                <label for="draft-template-type">Agreement Template</label>
+                <select id="draft-template-type">
+                  <option value="nda">Mutual Non-Disclosure Agreement (NDA)</option>
+                  <option value="retainer">Attorney Retainer Contract</option>
+                  <option value="services">Professional Consulting Services Agreement</option>
+                </select>
+              </div>
+
+              <button class="btn btn-gold btn-full" style="margin-top: 2rem;" onclick="generateAIDraft()">
+                <i data-lucide="cpu" style="width: 16px; height: 16px; margin-right: 6px;"></i>
+                Synthesize Document
+              </button>
+            </div>
+
+            <!-- Right Output Editor panel -->
+            <div class="dashboard-panel draft-editor-panel">
+              <div class="editor-header">
+                <span id="draft-doc-title">Document Preview</span>
+                <button class="btn btn-secondary btn-small" onclick="copyDraftText()">
+                  <i data-lucide="copy" style="width: 14px; height: 14px; margin-right: 4px;"></i> Copy Text
+                </button>
+              </div>
+              <textarea class="editor-textarea" id="draft-textbox" readonly placeholder="// Click 'Synthesize Document' to run Lexora Legal AI compiler..."></textarea>
+            </div>
+
+          </div>
+        </section>
+
+      </div>
+    </main>
+
+  </div>
+
+  <!-- Client Add Modal -->
+  <div class="modal-overlay" id="client-modal">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3>Register New Client File</h3>
+        <button class="modal-close" onclick="closeClientModal()">&times;</button>
+      </div>
+      <form id="add-client-form" onsubmit="event.preventDefault(); submitClientForm();">
+        <div class="form-group">
+          <label for="new-client-name">Client / Corporation Name</label>
+          <input type="text" id="new-client-name" required placeholder="e.g. Apex Biotech Corp">
+        </div>
+        <div class="form-group">
+          <label for="new-client-email">Primary Contact Email</label>
+          <input type="email" id="new-client-email" required placeholder="contact@company.com">
+        </div>
+        <div class="form-grid-2">
+          <div class="form-group">
+            <label for="new-client-practice">Case Practice Area</label>
+            <select id="new-client-practice" required>
+              <option value="Corporate Law">Corporate Law</option>
+              <option value="Intellectual Property">Intellectual Property</option>
+              <option value="Real Estate">Real Estate</option>
+              <option value="General Counsel">General Counsel</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="new-client-deposit">Initial Trust Deposit ($)</label>
+            <input type="number" id="new-client-deposit" value="5000" min="0">
+          </div>
+        </div>
+        
+        <div class="modal-actions">
+          <button type="button" class="btn btn-secondary" onclick="closeClientModal()">Cancel</button>
+          <button type="submit" class="btn btn-gold">Save Client Profile</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Case Add Modal -->
+  <div class="modal-overlay" id="case-modal">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3>Create New Legal Case File</h3>
+        <button class="modal-close" onclick="closeCaseModal()">&times;</button>
+      </div>
+      <form id="add-case-form" onsubmit="event.preventDefault(); submitCaseForm();">
+        <div class="form-group">
+          <label for="new-case-title">Case Title</label>
+          <input type="text" id="new-case-title" required placeholder="e.g. Intellectual Property Audit">
+        </div>
+        <div class="form-group">
+          <label for="new-case-client">Assigned Client</label>
+          <select id="new-case-client" required>
+            <!-- Injected dynamically -->
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="new-case-stage">Initial Pipeline Stage</label>
+          <select id="new-case-stage" required>
+            <option value="intake">Intake Review</option>
+            <option value="research">Research Phase</option>
+            <option value="drafting">Contract Drafting</option>
+          </select>
+        </div>
+        
+        <div class="modal-actions">
+          <button type="button" class="btn btn-secondary" onclick="closeCaseModal()">Cancel</button>
+          <button type="submit" class="btn btn-gold">Initialize Case File</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Toast Toast Notification -->
+  <div class="toast" id="toast">
+    <i data-lucide="check-circle" style="color: var(--gold);"></i>
+    <span id="toast-message">Success!</span>
+  </div>
+
+  <!-- Main JavaScript Application Logic -->
+  <script src="dashboard.js"></script>
+</body>
+</html>
