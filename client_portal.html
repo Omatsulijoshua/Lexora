@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lexora Client Portal — Secure Client Access</title>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- Stylesheet -->
+  <link rel="stylesheet" href="client_portal.css">
+</head>
+<body class="dark-theme">
+
+  <!-- 1. Secure Access Gate (Login View) -->
+  <div class="login-gate-overlay" id="login-gate">
+    <div class="login-box">
+      <div class="login-header">
+        <svg viewBox="0 0 200 200" class="login-logo" id="login-logo-icon">
+          <!-- Injected dynamically -->
+        </svg>
+        <h2>LEXORA</h2>
+        <span class="sub">SECURE CLIENT ACCESS GATEWAY</span>
+      </div>
+
+      <div class="login-body">
+        <div class="form-group">
+          <label for="client-select-login">Select Your Client Profile</label>
+          <select id="client-select-login" required>
+            <!-- Loaded dynamically from shared DB -->
+          </select>
+        </div>
+        <button class="btn btn-gold btn-full" onclick="authenticateClient()">
+          <i data-lucide="shield-check" style="width: 16px; height: 16px; margin-right: 6px;"></i>
+          Authorize Secure Session
+        </button>
+      </div>
+      
+      <div class="login-footer">
+        <p><i data-lucide="lock" style="width: 10px; height: 10px; display:inline-block;"></i> End-to-End SOC2 Encrypted Connection</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. Client Workspace Portal (Main View, Hidden initially) -->
+  <div class="portal-layout" id="portal-main" style="display: none;">
+    
+    <!-- Sidebar -->
+    <aside class="portal-sidebar">
+      <div class="sidebar-brand">
+        <svg viewBox="0 0 200 200" class="brand-logo-icon" id="sidebar-logo-icon">
+          <!-- Injected -->
+        </svg>
+        <span class="brand-text">LEXORA</span>
+      </div>
+      
+      <div class="sidebar-menu">
+        <a href="#" class="menu-item active" data-tab="tab-overview">
+          <i data-lucide="layout-dashboard"></i> Case Progress
+        </a>
+        <a href="#" class="menu-item" data-tab="tab-invoices">
+          <i data-lucide="credit-card"></i> Invoices
+        </a>
+        <a href="#" class="menu-item" data-tab="tab-documents">
+          <i data-lucide="file-text"></i> Document Vault
+        </a>
+      </div>
+
+      <div class="sidebar-footer">
+        <button class="btn btn-secondary btn-full" onclick="logOutClient()">
+          <i data-lucide="log-out"></i> Log Out Securely
+        </button>
+      </div>
+    </aside>
+
+    <!-- Main Content Pane -->
+    <main class="portal-main-content">
+      
+      <!-- Topbar -->
+      <header class="portal-topbar">
+        <div class="topbar-left">
+          <h2 id="client-display-name">APEX BIOTECH CORP</h2>
+          <span class="badge-client">Client Portal</span>
+        </div>
+        <div class="topbar-right">
+          <button class="btn btn-secondary btn-icon" id="btn-theme-toggle" title="Toggle Theme">
+            <i data-lucide="sun"></i>
+          </button>
+          <div class="attorney-contact-badge">
+            <div class="attorney-avatar">A</div>
+            <div class="attorney-meta">
+              <span class="attorney-name" id="display-firm-host">OMATSULI LEGAL ASSOCIATES</span>
+              <span class="attorney-label">Primary Legal Counsel</span>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <!-- View Containers -->
+      <div class="view-content-wrapper">
+        
+        <!-- View 1: Case Progress Timeline -->
+        <section class="tab-view active" id="tab-overview">
+          <div class="dashboard-panel">
+            <div class="panel-header">
+              <h3>Active Matter Milestones</h3>
+              <span class="badge-status active">Synchronized Live</span>
+            </div>
+            
+            <div class="active-case-summary">
+              <h2 id="active-case-title">Intellectual Property Audit</h2>
+              <p>Below is the real-time workflow phase of your legal file. Your attorney updates these items as research, writing, and filings progress.</p>
+            </div>
+
+            <!-- Milestone Progress Pipeline -->
+            <div class="timeline-wrapper">
+              <div class="timeline-line-bg">
+                <div class="timeline-line-progress" id="milestone-progress-bar" style="width: 0%;"></div>
+              </div>
+              
+              <div class="timeline-steps">
+                <!-- Step 1 -->
+                <div class="timeline-step" id="step-intake">
+                  <div class="step-icon"><i data-lucide="check"></i></div>
+                  <span class="step-label">Case Intake Review</span>
+                </div>
+                <!-- Step 2 -->
+                <div class="timeline-step" id="step-research">
+                  <div class="step-icon"><i data-lucide="check"></i></div>
+                  <span class="step-label">Research & Analysis</span>
+                </div>
+                <!-- Step 3 -->
+                <div class="timeline-step" id="step-drafting">
+                  <div class="step-icon"><i data-lucide="check"></i></div>
+                  <span class="step-label">Contract Drafting</span>
+                </div>
+                <!-- Step 4 -->
+                <div class="timeline-step" id="step-closed">
+                  <div class="step-icon"><i data-lucide="check"></i></div>
+                  <span class="step-label">Case Completed</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- View 2: Invoices -->
+        <section class="tab-view" id="tab-invoices">
+          <div class="section-title-box">
+            <h3>Billed Invoices & Accounts</h3>
+            <p>Review legal invoices rendered by your counsel. Clear balances securely using our integrated trust accounts processor.</p>
+          </div>
+
+          <div class="dashboard-panel" style="margin-top: 1.5rem;">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Invoice Number</th>
+                  <th>Bill Date</th>
+                  <th>Service Description</th>
+                  <th>Amount</th>
+                  <th>Payment Status</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody id="client-invoices-tbody">
+                <!-- Injected dynamically -->
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- View 3: Document Vault -->
+        <section class="tab-view" id="tab-documents">
+          <div class="section-title-box">
+            <h3>Secure Document Vault</h3>
+            <p>View corporate agreements, retainer contracts, and NDA clauses drafted by your attorney. Sign files digitally to clear pending compliance requirements.</p>
+          </div>
+
+          <div class="dashboard-panel" style="margin-top: 1.5rem;">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Document Title</th>
+                  <th>Type</th>
+                  <th>Compile Date</th>
+                  <th>Signing Status</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody id="client-documents-tbody">
+                <!-- Injected dynamically -->
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+      </div>
+    </main>
+
+  </div>
+
+  <!-- 3. Stripe Credit Card Payment Modal -->
+  <div class="modal-overlay" id="payment-modal">
+    <div class="modal-box payment-modal-box">
+      <div class="modal-header">
+        <h3>Secure Bill Payment Gateway</h3>
+        <button class="modal-close" onclick="closePaymentModal()">&times;</button>
+      </div>
+      
+      <div class="payment-summary-row">
+        <span>Payment to: <strong id="pay-firm-name">OMATSULI LEGAL ASSOCIATES</strong></span>
+        <span>Amount due: <strong class="gold-text" id="pay-total-amount">$4,536.00</strong></span>
+      </div>
+
+      <form id="stripe-payment-form" onsubmit="event.preventDefault(); processCardPayment();">
+        <div class="form-group">
+          <label for="card-name">Cardholder Name</label>
+          <input type="text" id="card-name" placeholder="Johnathan Doe" required>
+        </div>
+        <div class="form-group">
+          <label for="card-number">Credit Card Number</label>
+          <div class="card-input-wrapper">
+            <i data-lucide="credit-card"></i>
+            <input type="text" id="card-number" placeholder="4111 2222 3333 4444" maxlength="19" required>
+          </div>
+        </div>
+        <div class="form-grid-2">
+          <div class="form-group">
+            <label for="card-expiry">Expiration Date</label>
+            <input type="text" id="card-expiry" placeholder="MM/YY" maxlength="5" required>
+          </div>
+          <div class="form-group">
+            <label for="card-cvc">CVC Security Code</label>
+            <input type="text" id="card-cvc" placeholder="321" maxlength="4" required>
+          </div>
+        </div>
+        
+        <div class="modal-actions">
+          <button type="button" class="btn btn-secondary" onclick="closePaymentModal()">Cancel</button>
+          <button type="submit" class="btn btn-gold" id="btn-submit-payment">Submit Secure Payment</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 4. HTML5 Signature Drawing Canvas Modal -->
+  <div class="modal-overlay" id="signature-modal">
+    <div class="modal-box signature-modal-box">
+      <div class="modal-header">
+        <h3 id="sig-doc-title">E-Sign Document</h3>
+        <button class="modal-close" onclick="closeSignatureModal()">&times;</button>
+      </div>
+
+      <div class="signature-contract-preview">
+        <textarea id="sig-contract-preview-text" readonly></textarea>
+      </div>
+
+      <div class="signature-canvas-container">
+        <label>Draw Signature on Pad Below</label>
+        <div class="canvas-wrapper">
+          <canvas id="signature-pad" width="460" height="130"></canvas>
+        </div>
+        <div class="canvas-actions">
+          <button class="btn btn-secondary btn-small" onclick="clearSignatureCanvas()">Clear Pad</button>
+          <span class="canvas-tip"><i data-lucide="pen-tool"></i> Use mouse or touch screen to draw</span>
+        </div>
+      </div>
+      
+      <div class="modal-actions" style="padding: 1.5rem; border-top: var(--border-standard);">
+        <button class="btn btn-secondary" onclick="closeSignatureModal()">Cancel</button>
+        <button class="btn btn-gold" onclick="applyDigitalSignature()">Adopt & Sign Agreement</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Clipboard Toast Notification -->
+  <div class="toast" id="toast">
+    <i data-lucide="check-circle" style="color: var(--gold);"></i>
+    <span id="toast-message">Success!</span>
+  </div>
+
+  <!-- Client Portal JavaScript Engine -->
+  <script src="client_portal.js"></script>
+</body>
+</html>

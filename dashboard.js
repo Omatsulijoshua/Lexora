@@ -1,19 +1,47 @@
 // Lexora Lawyer Dashboard Application Script
 
 document.addEventListener('DOMContentLoaded', () => {
-    // 1. Initial State Database
-    let clients = [
+    // 1. Shared State Keys
+    const CLIENTS_KEY = 'lexora_clients_db';
+    const CASES_KEY = 'lexora_cases_db';
+    const INVOICES_KEY = 'lexora_invoices_db';
+    const CONTRACTS_KEY = 'lexora_contracts_db';
+
+    // Default Seed Data
+    const defaultClients = [
         { id: 1, name: "Apex Biotech Corp", email: "legal@apexbiotech.com", practice: "Corporate Law", balance: 15000, status: "Active" },
         { id: 2, name: "Nexus Venture Fund", email: "intake@nexusfund.io", practice: "Corporate Law", balance: 25000, status: "Active" },
         { id: 3, name: "Silverline Properties", email: "ops@silverline.com", practice: "Real Estate", balance: 5000, status: "Active" },
     ];
 
-    let cases = [
+    const defaultCases = [
         { id: 101, title: "Series A Financing Audit", client: "Apex Biotech Corp", stage: "research", priority: "High", attorney: "You" },
         { id: 102, title: "Bylaws Drafting & Review", client: "Nexus Venture Fund", stage: "drafting", priority: "Low", attorney: "You" },
         { id: 103, title: "Commercial Lease Negotiation", client: "Silverline Properties", stage: "intake", priority: "Mid", attorney: "You" },
         { id: 104, title: "IP License Agreement", client: "Apex Biotech Corp", stage: "drafting", priority: "High", attorney: "You" }
     ];
+
+    const defaultInvoices = [
+        { id: 9001, client: "Apex Biotech Corp", date: "July 21, 2026", description: "Bylaw review & retainer setup", amount: 4200, hours: 12, status: "Unpaid" },
+        { id: 9002, client: "Nexus Venture Fund", date: "July 20, 2026", description: "Series A term sheet consulting", amount: 8500, hours: 24, status: "Paid" },
+        { id: 9003, client: "Silverline Properties", date: "July 18, 2026", description: "Lease draft consultation", amount: 1500, hours: 4, status: "Unpaid" }
+    ];
+
+    const defaultContracts = [
+        { id: 8001, client: "Apex Biotech Corp", title: "Mutual NDA Agreement", type: "nda", status: "Draft", content: `MUTUAL NON-DISCLOSURE AGREEMENT\n-------------------------------\nThis Mutual NDA is made between OMATSULI LEGAL ASSOCIATES and APEX BIOTECH CORP.\n\nRecipient agrees to hold confidential intellectual property in escrow for a period of 5 years.` },
+        { id: 8002, client: "Nexus Venture Fund", title: "Attorney Retainer Engagement", type: "retainer", status: "Signed", content: `ATTORNEY RETAINER AGREEMENT\n---------------------------\nThis Engagement Contract assigns corporate services to Nexus Venture Fund at a rate of $350/hour.` }
+    ];
+
+    // Seed database if empty
+    if (!localStorage.getItem(CLIENTS_KEY)) localStorage.setItem(CLIENTS_KEY, JSON.stringify(defaultClients));
+    if (!localStorage.getItem(CASES_KEY)) localStorage.setItem(CASES_KEY, JSON.stringify(defaultCases));
+    if (!localStorage.getItem(INVOICES_KEY)) localStorage.setItem(INVOICES_KEY, JSON.stringify(defaultInvoices));
+    if (!localStorage.getItem(CONTRACTS_KEY)) localStorage.setItem(CONTRACTS_KEY, JSON.stringify(defaultContracts));
+
+    let clients = JSON.parse(localStorage.getItem(CLIENTS_KEY));
+    let cases = JSON.parse(localStorage.getItem(CASES_KEY));
+    let invoices = JSON.parse(localStorage.getItem(INVOICES_KEY));
+    let contracts = JSON.parse(localStorage.getItem(CONTRACTS_KEY));
 
     // 2. Parse URL Parameters for Multi-Tenant Setup
     const urlParams = new URLSearchParams(window.location.search);
@@ -234,6 +262,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             return c;
         });
+        localStorage.setItem(CASES_KEY, JSON.stringify(cases));
         renderMattersKanban();
         renderOverviewCases();
     }
@@ -273,10 +302,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
         clients.push(newClient);
         
+        // Write to shared state
+        localStorage.setItem(CLIENTS_KEY, JSON.stringify(clients));
+        
         // Refresh UI
         renderClientsTable();
         populateSelectors();
         closeClientModal();
+        updateDashboardMetrics();
         showToast("New Client registered successfully!");
         
         // Reset Form
@@ -299,10 +332,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
         cases.push(newCase);
         
+        // Write to shared state
+        localStorage.setItem(CASES_KEY, JSON.stringify(cases));
+        
         // Refresh UI
         renderMattersKanban();
         renderOverviewCases();
         closeCaseModal();
+        updateDashboardMetrics();
         showToast("New Case File initialized!");
 
         // Reset
@@ -336,15 +373,18 @@ document.addEventListener('DOMContentLoaded', () => {
         const invoiceId = Math.floor(Math.random() * 89999) + 10000;
         const dateString = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
 
-        // Update Trust balance metric
-        const trustMetric = document.getElementById('metric-trust-balance');
-        if (trustMetric) {
-            // Subtracting invoice from trust ledger simulation
-            const clientBal = clientObj.balance;
-            if (clientBal >= total) {
-                trustMetric.textContent = `$${(142500 - total).toLocaleString()}`;
-            }
-        }
+        // Save invoice to shared state
+        invoices.push({
+            id: invoiceId,
+            client: clientName,
+            date: dateString,
+            description: description,
+            amount: total,
+            hours: hours,
+            status: "Unpaid"
+        });
+        localStorage.setItem(INVOICES_KEY, JSON.stringify(invoices));
+        updateDashboardMetrics();
 
         invoiceSheet.innerHTML = `
             <div class="invoice-sheet">
@@ -511,6 +551,19 @@ For Consultant: _______________________`;
         setTimeout(() => {
             docTitle.textContent = titleName;
             draftText.value = templateContent;
+            
+            // Save contract to shared database
+            const docId = Math.floor(Math.random() * 8999) + 1000;
+            contracts.push({
+                id: docId,
+                client: clientName,
+                title: titleName,
+                type: type,
+                status: 'Draft',
+                content: templateContent
+            });
+            localStorage.setItem(CONTRACTS_KEY, JSON.stringify(contracts));
+            
             showToast("AI Document Synthesized!");
         }, 1200);
     }
@@ -583,9 +636,55 @@ For Consultant: _______________________`;
         });
     }
 
+    // 9. Update Metrics Function
+    function updateDashboardMetrics() {
+        const trustSum = clients.reduce((acc, c) => acc + c.balance, 0);
+        const outstandingSum = invoices.reduce((acc, inv) => acc + (inv.status === 'Unpaid' ? inv.amount : 0), 0);
+        
+        const totalHours = invoices.reduce((acc, inv) => {
+            return acc + (inv.hours || (inv.amount / 350));
+        }, 0);
+
+        const trustMetric = document.getElementById('metric-trust-balance');
+        if (trustMetric) trustMetric.textContent = `$${trustSum.toLocaleString()}`;
+
+        const hoursMetric = document.getElementById('metric-hours-worked');
+        if (hoursMetric) hoursMetric.textContent = `${totalHours.toFixed(1)} hrs`;
+
+        const activeMattersMetric = document.getElementById('metric-active-matters');
+        if (activeMattersMetric) activeMattersMetric.textContent = `${cases.length} Cases`;
+
+        const outstandingMetric = document.getElementById('metric-outstanding');
+        if (outstandingMetric) outstandingMetric.textContent = `$${outstandingSum.toLocaleString()}`;
+    }
+
+    // 10. Listen to LocalStorage updates from Client Portal!
+    window.addEventListener('storage', (e) => {
+        if (e.key === CLIENTS_KEY) {
+            clients = JSON.parse(e.newValue);
+            renderClientsTable();
+            populateSelectors();
+            updateDashboardMetrics();
+        }
+        if (e.key === CASES_KEY) {
+            cases = JSON.parse(e.newValue);
+            renderMattersKanban();
+            renderOverviewCases();
+            updateDashboardMetrics();
+        }
+        if (e.key === INVOICES_KEY) {
+            invoices = JSON.parse(e.newValue);
+            updateDashboardMetrics();
+        }
+        if (e.key === CONTRACTS_KEY) {
+            contracts = JSON.parse(e.newValue);
+        }
+    });
+
     // Startup Initializations
     renderClientsTable();
     renderMattersKanban();
     renderOverviewCases();
     populateSelectors();
+    updateDashboardMetrics();
 });
