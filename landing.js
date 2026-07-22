@@ -262,14 +262,9 @@ Date: July 21, 2026
         await log("SaaS instance initialization successful!", 600);
         await log("Redirecting to your workspace dashboard...", 400);
 
-        // Redirect to standalone dashboard.html with query parameters
+        // Redirect to unified login page with firm pre-filled
         setTimeout(() => {
-            const params = new URLSearchParams({
-                firm: firmName,
-                practice: practice,
-                staff: invites
-            });
-            window.location.href = `dashboard.html?${params.toString()}`;
+            window.location.href = `login.html?firm=${encodeURIComponent(firmName)}`;
         }, 1500);
         lucide.createIcons();
     }

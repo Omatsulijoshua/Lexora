@@ -1,6 +1,37 @@
-// Lexora Lawyer Dashboard Application Script (Database Sync Enabled)
+// Lexora Lawyer Dashboard Application Script (JWT Guard & DB Sync Enabled)
 
 document.addEventListener('DOMContentLoaded', () => {
+    // Route Guard: Redirect to login.html if token missing
+    const token = sessionStorage.getItem('lexora_token');
+    const role = sessionStorage.getItem('lexora_role');
+    
+    if (!token || role !== 'lawyer') {
+        sessionStorage.clear();
+        window.location.href = 'login.html';
+        return;
+    }
+
+    // Secure fetchAPI helper
+    function fetchAPI(url, options = {}) {
+        const headers = Object.assign({
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+        }, options.headers || {});
+        
+        const secureOptions = Object.assign({}, options, { headers });
+        
+        return fetch(url, secureOptions).then(async res => {
+            const data = await res.json();
+            if (res.status === 401 || res.status === 403) {
+                sessionStorage.clear();
+                window.location.href = 'login.html';
+                throw new Error("Session expired. Redirecting...");
+            }
+            if (!res.ok) throw new Error(data.error || "API error occurred");
+            return data;
+        });
+    }
+
     // 1. Client-side state arrays
     let clients = [];
     let cases = [];
@@ -16,12 +47,12 @@ document.addEventListener('DOMContentLoaded', () => {
     async function loadAllDatabaseTables() {
         try {
             const [clientsRes, casesRes, invoicesRes, contractsRes, appointmentsRes, settingsRes] = await Promise.all([
-                fetch('/api/clients').then(res => res.json()),
-                fetch('/api/cases').then(res => res.json()),
-                fetch('/api/invoices').then(res => res.json()),
-                fetch('/api/contracts').then(res => res.json()),
-                fetch('/api/appointments').then(res => res.json()),
-                fetch('/api/settings').then(res => res.json())
+                fetchAPI('/api/clients'),
+                fetchAPI('/api/cases'),
+                fetchAPI('/api/invoices'),
+                fetchAPI('/api/contracts'),
+                fetchAPI('/api/appointments'),
+                fetchAPI('/api/settings')
             ]);
 
             clients = clientsRes;
@@ -191,7 +222,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!tbody) return;
         tbody.innerHTML = '';
         
-        // Take top 3 recent cases
         cases.slice(-3).reverse().forEach(item => {
             const tr = document.createElement('tr');
             tr.innerHTML = `
@@ -225,12 +255,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 7. Case advancement
     window.advanceCaseStage = function(caseId, stageName) {
-        fetch(`/api/cases/${caseId}/stage`, {
+        fetchAPI(`/api/cases/${caseId}/stage`, {
             method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ stage: stageName })
         })
-        .then(res => res.json())
         .then(() => {
             showToast(`Case moved to ${stageName.toUpperCase()}`);
             triggerDBSyncNotification();
@@ -263,12 +291,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const practice = document.getElementById('new-client-practice').value;
         const deposit = parseFloat(document.getElementById('new-client-deposit').value) || 0;
 
-        fetch('/api/clients', {
+        fetchAPI('/api/clients', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ name, email, practice, balance: deposit })
         })
-        .then(res => res.json())
         .then(() => {
             closeClientModal();
             showToast("New Client registered successfully!");
@@ -276,7 +302,7 @@ document.addEventListener('DOMContentLoaded', () => {
             loadAllDatabaseTables();
             document.getElementById('add-client-form').reset();
         })
-        .catch(err => console.error("Error submitting client form:", err));
+        .catch(err => showToast(err.message));
     }
 
     window.submitCaseForm = function() {
@@ -284,12 +310,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const client = document.getElementById('new-case-client').value;
         const stage = document.getElementById('new-case-stage').value;
 
-        fetch('/api/cases', {
+        fetchAPI('/api/cases', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ title, client, stage, priority: "Mid", attorney: "You" })
         })
-        .then(res => res.json())
         .then(() => {
             closeCaseModal();
             showToast("New Case File initialized!");
@@ -297,7 +321,7 @@ document.addEventListener('DOMContentLoaded', () => {
             loadAllDatabaseTables();
             document.getElementById('add-case-form').reset();
         })
-        .catch(err => console.error("Error submitting case form:", err));
+        .catch(err => showToast(err.message));
     }
 
     window.selectClientForInvoicing = function(clientName) {
@@ -321,17 +345,15 @@ document.addEventListener('DOMContentLoaded', () => {
         const clientObj = clients.find(c => c.name === clientName) || { email: 'client@example.com' };
         
         const subtotal = hours * rate;
-        const taxes = subtotal * 0.08; // 8% tax
+        const taxes = subtotal * 0.08;
         const total = subtotal + taxes;
 
         const dateString = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
 
-        fetch('/api/invoices', {
+        fetchAPI('/api/invoices', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ client: clientName, date: dateString, description, amount: total, hours })
         })
-        .then(res => res.json())
         .then(newInv => {
             showToast("Invoice Drafted Successfully!");
             triggerDBSyncNotification();
@@ -401,7 +423,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
             `;
 
-            // Inject logo to invoice print mockup
             fetch('assets/logo_icon_light.svg')
                 .then(r => r.text())
                 .then(svgText => {
@@ -413,14 +434,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
             printBtn.removeAttribute('disabled');
         })
-        .catch(err => console.error("Error generating invoice:", err));
+        .catch(err => showToast(err.message));
     }
 
     window.printInvoiceSheet = function() {
         window.print();
     }
 
-    // 9. AI Drafting Workbench
+    // 9. Production AI Drafting Workbench (OpenAI Integrated)
     const draftText = document.getElementById('draft-textbox');
     const docTitle = document.getElementById('draft-doc-title');
 
@@ -428,40 +449,23 @@ document.addEventListener('DOMContentLoaded', () => {
         const clientName = document.getElementById('draft-client-select').value;
         const type = document.getElementById('draft-template-type').value;
 
-        draftText.value = "// Initializing legal compiler parameters...\n// Mapping document vectors...";
+        draftText.value = "// Initializing OpenAI legal models...\n// Compiling contextual parameters...";
         
-        let templateContent = "";
-        let titleName = "";
-        const fName = firmDetails.firm || "Omatsuli Legal Associates";
-        const pArea = firmDetails.practice || "Corporate Law";
-
-        if (type === 'nda') {
-            titleName = "MUTUAL NON-DISCLOSURE AGREEMENT";
-            templateContent = `MUTUAL NON-DISCLOSURE AGREEMENT\n--------------------------------------------------\nThis Mutual Non-Disclosure Agreement ("Agreement") is made and entered into this ${new Date().toLocaleDateString('en-US')} ("Effective Date"), by and between:\n\nFIRM REPRESENTING: ${fName.toUpperCase()} ("Disclosing Party"),\nAND\nCLIENT PARTY: ${clientName.toUpperCase()} ("Recipient Party").\n\n1. Purpose: The parties wish to enter into discussions regarding potential business relationships. In the course of these discussions, it may be necessary for either party to disclose confidential intellectual property.\n\n2. Confidential Information: "Confidential Information" refers to proprietary data, trade secrets, software code, or legal strategies.\n\n3. Term of Protection: Obligations of confidentiality shall survive for five (5) years.\n\nFor: ${fName.toUpperCase()}\nSign: ____________________________\n\nFor: ${clientName.toUpperCase()}\nSign: ____________________________`;
-        } else if (type === 'retainer') {
-            titleName = "ATTORNEY RETAINER AGREEMENT";
-            templateContent = `ATTORNEY RETAINER AGREEMENT & ENGAGEMENT\n--------------------------------------------------\nThis Retainer Agreement is executed by and between:\n\nLAW CHAMBER: ${fName.toUpperCase()} (hereinafter "Attorney"),\nAND\nCLIENT: ${clientName.toUpperCase()} (hereinafter "Client").\n\n1. Scope of Representation: Client retains Attorney to perform legal counsel services related specifically to: ${pArea}.\n\n2. Trust Retainer Deposit: Client agrees to pay an initial retainer deposit of $5,000 to IOLTA.\n\nAttorney Sign: ___________________________\nClient Sign:   ___________________________`;
-        } else {
-            titleName = "CONSULTING SERVICES CONTRACT";
-            templateContent = `PROFESSIONAL CONSULTING SERVICES CONTRACT\n--------------------------------------------------\nThis Agreement is entered into by:\n\nCLIENT: ${clientName.toUpperCase()} ("Client"),\nAND\nCONSULTANT: ${fName.toUpperCase()} ("Consultant").\n\n1. Services: Consultant agrees to provide professional corporate consulting, regulatory review, and technology integration.\n\nFor Client: ___________________________\nFor Consultant: _______________________`;
-        }
-
-        setTimeout(() => {
-            fetch('/api/contracts', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ client: clientName, title: titleName, type, content: templateContent })
-            })
-            .then(res => res.json())
-            .then(() => {
-                docTitle.textContent = titleName;
-                draftText.value = templateContent;
-                showToast("AI Document Synthesized!");
-                triggerDBSyncNotification();
-                loadAllDatabaseTables();
-            })
-            .catch(err => console.error("Error creating AI draft:", err));
-        }, 1200);
+        fetchAPI('/api/ai/draft', {
+            method: 'POST',
+            body: JSON.stringify({ clientName, type })
+        })
+        .then(data => {
+            docTitle.textContent = data.title;
+            draftText.value = data.content;
+            showToast(data.sandbox ? "AI Document Drafted (Sandbox)!" : "AI Document Drafted via GPT-4!");
+            triggerDBSyncNotification();
+            loadAllDatabaseTables();
+        })
+        .catch(err => {
+            showToast("Failed to compile AI document draft.");
+            console.error(err);
+        });
     }
 
     window.copyDraftText = function() {
@@ -578,19 +582,17 @@ document.addEventListener('DOMContentLoaded', () => {
         const date = document.getElementById('appt-date').value;
         const time = document.getElementById('appt-time').value;
 
-        fetch('/api/appointments', {
+        fetchAPI('/api/appointments', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ client: clientName, title, date, time, type: "Consultation" })
         })
-        .then(res => res.json())
         .then(() => {
             showToast("New meeting consultation scheduled!");
             triggerDBSyncNotification();
             loadAllDatabaseTables();
             document.getElementById('add-appointment-form').reset();
         })
-        .catch(err => console.error("Error scheduling appointment:", err));
+        .catch(err => showToast(err.message));
     }
 
     // 11. Firm Settings Submission
@@ -601,18 +603,16 @@ document.addEventListener('DOMContentLoaded', () => {
         const phone = document.getElementById('settings-firm-phone').value.trim();
         const email = document.getElementById('settings-firm-email').value.trim();
         
-        fetch('/api/settings', {
+        fetchAPI('/api/settings', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ firm, practice, address, phone, email })
         })
-        .then(res => res.json())
         .then(() => {
             showToast("Workspace branding configurations saved!");
             triggerDBSyncNotification();
             loadAllDatabaseTables();
         })
-        .catch(err => console.error("Error saving workspace settings:", err));
+        .catch(err => showToast(err.message));
     }
 
     function applyFirmBranding() {
@@ -670,6 +670,20 @@ document.addEventListener('DOMContentLoaded', () => {
             loadAllDatabaseTables();
         }
     });
+
+    // Logout
+    window.logOutUser = function() {
+        sessionStorage.clear();
+        window.location.href = 'login.html';
+    }
+
+    const logoutBtn = document.getElementById('btn-logout');
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            logOutUser();
+        });
+    }
 
     // Toast alert utility
     function showToast(message) {

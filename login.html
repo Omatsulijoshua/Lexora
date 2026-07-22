@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lexora - Secure Access Gateway</title>
+  <!-- Google Fonts Outfit & Inter -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <!-- Stylesheets -->
+  <link rel="stylesheet" href="landing.css">
+  <link rel="stylesheet" href="login.css">
+</head>
+<body class="dark-theme">
+
+  <div class="login-wrapper">
+    <!-- Header Branding -->
+    <div class="login-brand">
+      <svg viewBox="0 0 200 200" style="width:36px; height:36px;" id="login-brand-logo">
+        <!-- SVG injected dynamically -->
+      </svg>
+      <span>LEXORA</span>
+    </div>
+
+    <!-- Login Box Card -->
+    <div class="login-box">
+      
+      <!-- Tab Toggles -->
+      <div class="login-tabs">
+        <button class="login-tab-btn active" id="tab-login-btn" onclick="switchLoginTab('login')">Account Sign In</button>
+        <button class="login-tab-btn" id="tab-signup-btn" onclick="switchLoginTab('signup')">Register Firm</button>
+      </div>
+
+      <!-- Sign In Form -->
+      <div class="login-form-pane active" id="pane-login">
+        <h3>Secure Credentials Login</h3>
+        <p class="pane-description">Authorized lawyers and clients enter secure access parameters below.</p>
+        
+        <form id="form-login" onsubmit="event.preventDefault(); handleAuthLogin();">
+          <div class="login-group">
+            <label for="login-email">Access Email Address</label>
+            <input type="email" id="login-email" placeholder="e.g. lawyer@lexora.app" required>
+          </div>
+          <div class="login-group">
+            <label for="login-password">Account Password</label>
+            <input type="password" id="login-password" placeholder="••••••••" required>
+          </div>
+          <button type="submit" class="btn btn-gold btn-full">Secure Sign In</button>
+        </form>
+      </div>
+
+      <!-- Sign Up Form -->
+      <div class="login-form-pane" id="pane-signup">
+        <h3>Provision Law Workspace</h3>
+        <p class="pane-description">Configure your new multi-tenant law firm workspace in under 10 seconds.</p>
+        
+        <form id="form-signup" onsubmit="event.preventDefault(); handleAuthSignup();">
+          <div class="login-group">
+            <label for="signup-firm">Law Firm Name</label>
+            <input type="text" id="signup-firm" placeholder="e.g. Apex Legal Associates" required>
+          </div>
+          <div class="login-group">
+            <label for="signup-email">Administrator Email</label>
+            <input type="email" id="signup-email" placeholder="e.g. partner@apexlegal.com" required>
+          </div>
+          <div class="login-group">
+            <label for="signup-password">Choose Password</label>
+            <input type="password" id="signup-password" placeholder="••••••••" required>
+          </div>
+          <button type="submit" class="btn btn-gold btn-full">Provision Workspace</button>
+        </form>
+      </div>
+
+    </div>
+
+    <!-- Redirect Home -->
+    <a href="landing.html" class="back-home-link">← Return to Landing Page</a>
+  </div>
+
+  <!-- Toast Notification Alert -->
+  <div class="toast" id="toast">
+    <div class="toast-content">
+      <i data-lucide="info" class="toast-icon"></i>
+      <span id="toast-message">Secure Session Init...</span>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="login.js"></script>
+</body>
+</html>

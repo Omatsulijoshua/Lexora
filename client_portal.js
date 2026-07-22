@@ -1,6 +1,38 @@
-// Lexora Client Portal Script (Database Sync Enabled)
+// Lexora Client Portal Script (JWT Guard & DB Sync Enabled)
 
 document.addEventListener('DOMContentLoaded', () => {
+    // Route Guard: Redirect to login.html if token missing
+    const token = sessionStorage.getItem('lexora_token');
+    const role = sessionStorage.getItem('lexora_role');
+    const activeClient = sessionStorage.getItem('lexora_active_client') || '';
+
+    if (!token || role !== 'client' || !activeClient) {
+        sessionStorage.clear();
+        window.location.href = 'login.html';
+        return;
+    }
+
+    // Secure fetchAPI helper
+    function fetchAPI(url, options = {}) {
+        const headers = Object.assign({
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+        }, options.headers || {});
+        
+        const secureOptions = Object.assign({}, options, { headers });
+        
+        return fetch(url, secureOptions).then(async res => {
+            const data = await res.json();
+            if (res.status === 401 || res.status === 403) {
+                sessionStorage.clear();
+                window.location.href = 'login.html';
+                throw new Error("Session expired. Redirecting...");
+            }
+            if (!res.ok) throw new Error(data.error || "API error occurred");
+            return data;
+        });
+    }
+
     // 1. Client-side state arrays
     let clients = [];
     let cases = [];
@@ -9,18 +41,21 @@ document.addEventListener('DOMContentLoaded', () => {
     let appointments = [];
     let firmDetails = {};
 
-    let activeClient = sessionStorage.getItem('lexora_active_client') || '';
+    const clientDisplayName = document.getElementById('client-display-name');
+    if (clientDisplayName) {
+        clientDisplayName.textContent = activeClient.toUpperCase();
+    }
 
     // 2. Fetch and Load Database Tables from Server APIs
     async function loadAllDatabaseTables() {
         try {
             const [clientsRes, casesRes, invoicesRes, contractsRes, appointmentsRes, settingsRes] = await Promise.all([
-                fetch('/api/clients').then(res => res.json()),
-                fetch('/api/cases').then(res => res.json()),
-                fetch('/api/invoices').then(res => res.json()),
-                fetch('/api/contracts').then(res => res.json()),
-                fetch('/api/appointments').then(res => res.json()),
-                fetch('/api/settings').then(res => res.json())
+                fetchAPI('/api/clients'),
+                fetchAPI('/api/cases'),
+                fetchAPI('/api/invoices'),
+                fetchAPI('/api/contracts'),
+                fetchAPI('/api/appointments'),
+                fetchAPI('/api/settings')
             ]);
 
             clients = clientsRes;
@@ -30,44 +65,40 @@ document.addEventListener('DOMContentLoaded', () => {
             appointments = appointmentsRes;
             firmDetails = settingsRes;
 
-            // Re-populate client login dropdown selector
-            populateLoginSelector();
-
-            // Refresh active client views if authenticated
-            if (activeClient) {
-                renderOverviewMilestones();
-                renderClientInvoices();
-                renderClientDocuments();
-                renderClientAppointmentsList();
-                applyFirmBranding();
-            }
+            renderOverviewMilestones();
+            renderClientInvoices();
+            renderClientDocuments();
+            renderClientAppointmentsList();
+            applyFirmBranding();
             lucide.createIcons();
         } catch (err) {
             console.error("Error fetching client database tables:", err);
         }
     }
 
-    function populateLoginSelector() {
-        const clientSelect = document.getElementById('client-select-login');
-        if (!clientSelect) return;
+    // Check for returning Stripe Checkout redirect parameters
+    const urlParams = new URLSearchParams(window.location.search);
+    const paymentStatus = urlParams.get('payment');
+    if (paymentStatus === 'success') {
+        const invId = urlParams.get('invoiceId');
+        const amount = urlParams.get('amount');
+        const clientName = urlParams.get('clientName');
         
-        const currentSelectedVal = clientSelect.value;
-        clientSelect.innerHTML = '';
-        
-        clients.forEach(c => {
-            const opt = document.createElement('option');
-            opt.value = c.name;
-            opt.textContent = c.name;
-            clientSelect.appendChild(opt);
-        });
-
-        if (currentSelectedVal) {
-            clientSelect.value = currentSelectedVal;
-        }
+        fetchAPI(`/api/invoices/${invId}/pay`, {
+            method: 'PUT',
+            body: JSON.stringify({ clientName, amount })
+        })
+        .then(() => {
+            showToast("Stripe Payment transaction verified successfully!");
+            triggerDBSyncNotification();
+            window.history.replaceState({}, document.title, window.location.pathname);
+            loadAllDatabaseTables();
+        })
+        .catch(err => showToast("Stripe payment verification failed."));
     }
 
     // 3. Inject Logo Icons
-    const logoSlots = ['login-logo-icon', 'sidebar-logo-icon'];
+    const logoSlots = ['sidebar-logo-icon'];
     fetch('assets/logo_icon_light.svg')
         .then(res => res.text())
         .then(svgText => {
@@ -86,47 +117,18 @@ document.addEventListener('DOMContentLoaded', () => {
         })
         .catch(err => console.error('Error loading client portal logos:', err));
 
-    // 4. Authenticate Logic
-    const clientSelect = document.getElementById('client-select-login');
-    const loginGate = document.getElementById('login-gate');
-    const portalMain = document.getElementById('portal-main');
-    const clientDisplayName = document.getElementById('client-display-name');
-
-    window.authenticateClient = function() {
-        const clientName = clientSelect.value;
-        if (!clientName) return;
-
-        sessionStorage.setItem('lexora_active_client', clientName);
-        activeClient = clientName;
-        
-        loginGate.style.display = 'none';
-        portalMain.style.display = 'flex';
-        
-        clientDisplayName.textContent = clientName.toUpperCase();
-        
-        // Refresh active views
-        renderOverviewMilestones();
-        renderClientInvoices();
-        renderClientDocuments();
-        renderClientAppointmentsList();
-        applyFirmBranding();
-        showToast(`Secure session authorized for ${clientName}`);
-        
-        lucide.createIcons();
-    };
-
+    // Logout
     window.logOutClient = function() {
-        sessionStorage.removeItem('lexora_active_client');
-        activeClient = '';
-        loginGate.style.display = 'flex';
-        portalMain.style.display = 'none';
+        sessionStorage.clear();
+        window.location.href = 'login.html';
     };
 
-    // Auto-login if session exists
-    if (activeClient) {
-        loginGate.style.display = 'none';
-        portalMain.style.display = 'flex';
-        clientDisplayName.textContent = activeClient.toUpperCase();
+    const logoutBtn = document.getElementById('btn-logout');
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            logOutClient();
+        });
     }
 
     // 5. Sidebar Router
@@ -171,7 +173,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 7. Render Views Logic
     function renderOverviewMilestones() {
-        const clientCases = cases.filter(c => c.client === activeClient);
+        const clientCases = cases; // Filtered by server automatically!
         const caseTitleText = document.getElementById('active-case-title');
         const progressBar = document.getElementById('milestone-progress-bar');
         
@@ -222,14 +224,12 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!tbody) return;
         tbody.innerHTML = '';
 
-        const clientInvs = invoices.filter(inv => inv.client === activeClient);
-
-        if (clientInvs.length === 0) {
+        if (invoices.length === 0) {
             tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:var(--slate-500)">No invoices billed to your account.</td></tr>`;
             return;
         }
 
-        clientInvs.forEach(inv => {
+        invoices.forEach(inv => {
             const tr = document.createElement('tr');
             const actionBtn = inv.status === 'Unpaid' 
                 ? `<button class="btn btn-gold btn-small" onclick="openPaymentModal(${inv.id}, ${inv.amount})">Pay Now</button>`
@@ -254,14 +254,12 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!tbody) return;
         tbody.innerHTML = '';
 
-        const clientDocs = contracts.filter(doc => doc.client === activeClient);
-
-        if (clientDocs.length === 0) {
+        if (contracts.length === 0) {
             tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:var(--slate-500)">No files pending review.</td></tr>`;
             return;
         }
 
-        clientDocs.forEach(doc => {
+        contracts.forEach(doc => {
             const tr = document.createElement('tr');
             const actionBtn = doc.status === 'Draft'
                 ? `<button class="btn btn-gold btn-small" onclick="openSignatureModal(${doc.id})">Review & Sign</button>`
@@ -304,24 +302,27 @@ document.addEventListener('DOMContentLoaded', () => {
     window.processCardPayment = function() {
         const payBtn = document.getElementById('btn-submit-payment');
         payBtn.disabled = true;
-        payBtn.textContent = "Processing Trust Escrow Authorization...";
+        payBtn.textContent = "Redirecting to Stripe Gateway...";
 
-        fetch(`/api/invoices/${activePayingInvId}/pay`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ clientName: activeClient, amount: activePayingInvAmt })
+        fetchAPI('/api/payments/create-checkout', {
+            method: 'POST',
+            body: JSON.stringify({ invoiceId: activePayingInvId, amount: activePayingInvAmt, clientName: activeClient })
         })
-        .then(res => res.json())
-        .then(() => {
-            showToast("Trust account cleared. Invoice paid successfully!");
-            triggerDBSyncNotification();
-            loadAllDatabaseTables();
-            closePaymentModal();
-            payBtn.disabled = false;
-            payBtn.textContent = "Submit Secure Payment";
+        .then(data => {
+            if (data.sandbox) {
+                showToast("Sandbox payment authorized! Ledger cleared.");
+                triggerDBSyncNotification();
+                loadAllDatabaseTables();
+                closePaymentModal();
+                payBtn.disabled = false;
+                payBtn.textContent = "Submit Secure Payment";
+            } else if (data.url) {
+                // Redirect to real Stripe!
+                window.location.href = data.url;
+            }
         })
         .catch(err => {
-            console.error("Error processing card payment:", err);
+            showToast("Failed to verify transaction.");
             payBtn.disabled = false;
             payBtn.textContent = "Submit Secure Payment";
         });
@@ -438,19 +439,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const signedContent = `${docObj.content}\n\n[DIGITALLY SIGNED VIA LEXORA CLIENT PORTAL]\nClient: ${activeClient.toUpperCase()}\nDate: ${new Date().toLocaleString()}`;
 
-        fetch(`/api/contracts/${activeSigningDocId}/sign`, {
+        fetchAPI(`/api/contracts/${activeSigningDocId}/sign`, {
             method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ content: signedContent })
         })
-        .then(res => res.json())
         .then(() => {
-            showToast("Agreement signed and registered with legal counsel!");
+            showToast("Agreement signed successfully!");
             triggerDBSyncNotification();
             loadAllDatabaseTables();
             closeSignatureModal();
         })
-        .catch(err => console.error("Error signing document:", err));
+        .catch(err => showToast(err.message));
     };
 
     window.downloadSignedContract = function(title) {
@@ -463,14 +462,12 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!list) return;
         list.innerHTML = '';
         
-        const clientAppts = appointments.filter(a => a.client === activeClient);
-        
-        if (clientAppts.length === 0) {
+        if (appointments.length === 0) {
             list.innerHTML = `<li><span style="color:var(--slate-500)">No appointments scheduled.</span></li>`;
             return;
         }
         
-        clientAppts.slice().sort((a,b) => a.date.localeCompare(b.date)).forEach(a => {
+        appointments.slice().sort((a,b) => a.date.localeCompare(b.date)).forEach(a => {
             const li = document.createElement('li');
             li.innerHTML = `
                 <div class="appt-info">
@@ -492,19 +489,17 @@ document.addEventListener('DOMContentLoaded', () => {
         const time = document.getElementById('book-appt-time').value;
         const notes = document.getElementById('book-appt-notes').value.trim();
         
-        fetch('/api/appointments', {
+        fetchAPI('/api/appointments', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ client: activeClient, title: `${type} (${notes || 'No notes'})`, date, time, type: "Consultation" })
         })
-        .then(res => res.json())
         .then(() => {
             showToast("Consultation requested successfully!");
             triggerDBSyncNotification();
             loadAllDatabaseTables();
             document.getElementById('book-appointment-form').reset();
         })
-        .catch(err => console.error("Error booking appointment:", err));
+        .catch(err => showToast(err.message));
     }
 
     function applyFirmBranding() {
