@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: lexora-saas
+    runtime: node
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: DATABASE_URL
+        value: postgresql://neondb_owner:npg_HDznc8YFW6mg@ep-floral-hill-avhzefue-pooler.c-11.us-east-1.aws.neon.tech/neondb?sslmode=require
+      - key: PORT
+        value: 3000
