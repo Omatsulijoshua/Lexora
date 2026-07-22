@@ -1,107 +1,48 @@
-// Lexora Lawyer Dashboard Application Script
+// Lexora Lawyer Dashboard Application Script (Database Sync Enabled)
 
 document.addEventListener('DOMContentLoaded', () => {
-    // 1. Shared State Keys
-    const CLIENTS_KEY = 'lexora_clients_db';
-    const CASES_KEY = 'lexora_cases_db';
-    const INVOICES_KEY = 'lexora_invoices_db';
-    const CONTRACTS_KEY = 'lexora_contracts_db';
+    // 1. Client-side state arrays
+    let clients = [];
+    let cases = [];
+    let invoices = [];
+    let contracts = [];
+    let appointments = [];
+    let firmDetails = {};
 
-    // Default Seed Data
-    const defaultClients = [
-        { id: 1, name: "Apex Biotech Corp", email: "legal@apexbiotech.com", practice: "Corporate Law", balance: 15000, status: "Active" },
-        { id: 2, name: "Nexus Venture Fund", email: "intake@nexusfund.io", practice: "Corporate Law", balance: 25000, status: "Active" },
-        { id: 3, name: "Silverline Properties", email: "ops@silverline.com", practice: "Real Estate", balance: 5000, status: "Active" },
-    ];
+    let currentYear = 2026;
+    let currentMonth = 6; // July (0-indexed)
 
-    const defaultCases = [
-        { id: 101, title: "Series A Financing Audit", client: "Apex Biotech Corp", stage: "research", priority: "High", attorney: "You" },
-        { id: 102, title: "Bylaws Drafting & Review", client: "Nexus Venture Fund", stage: "drafting", priority: "Low", attorney: "You" },
-        { id: 103, title: "Commercial Lease Negotiation", client: "Silverline Properties", stage: "intake", priority: "Mid", attorney: "You" },
-        { id: 104, title: "IP License Agreement", client: "Apex Biotech Corp", stage: "drafting", priority: "High", attorney: "You" }
-    ];
+    // 2. Fetch and Load Database Tables from Express APIs
+    async function loadAllDatabaseTables() {
+        try {
+            const [clientsRes, casesRes, invoicesRes, contractsRes, appointmentsRes, settingsRes] = await Promise.all([
+                fetch('/api/clients').then(res => res.json()),
+                fetch('/api/cases').then(res => res.json()),
+                fetch('/api/invoices').then(res => res.json()),
+                fetch('/api/contracts').then(res => res.json()),
+                fetch('/api/appointments').then(res => res.json()),
+                fetch('/api/settings').then(res => res.json())
+            ]);
 
-    const defaultInvoices = [
-        { id: 9001, client: "Apex Biotech Corp", date: "July 21, 2026", description: "Bylaw review & retainer setup", amount: 4200, hours: 12, status: "Unpaid" },
-        { id: 9002, client: "Nexus Venture Fund", date: "July 20, 2026", description: "Series A term sheet consulting", amount: 8500, hours: 24, status: "Paid" },
-        { id: 9003, client: "Silverline Properties", date: "July 18, 2026", description: "Lease draft consultation", amount: 1500, hours: 4, status: "Unpaid" }
-    ];
+            clients = clientsRes;
+            cases = casesRes;
+            invoices = invoicesRes;
+            contracts = contractsRes;
+            appointments = appointmentsRes;
+            firmDetails = settingsRes;
 
-    const defaultContracts = [
-        { id: 8001, client: "Apex Biotech Corp", title: "Mutual NDA Agreement", type: "nda", status: "Draft", content: `MUTUAL NON-DISCLOSURE AGREEMENT\n-------------------------------\nThis Mutual NDA is made between OMATSULI LEGAL ASSOCIATES and APEX BIOTECH CORP.\n\nRecipient agrees to hold confidential intellectual property in escrow for a period of 5 years.` },
-        { id: 8002, client: "Nexus Venture Fund", title: "Attorney Retainer Engagement", type: "retainer", status: "Signed", content: `ATTORNEY RETAINER AGREEMENT\n---------------------------\nThis Engagement Contract assigns corporate services to Nexus Venture Fund at a rate of $350/hour.` }
-    ];
-
-    // Seed database if empty
-    if (!localStorage.getItem(CLIENTS_KEY)) localStorage.setItem(CLIENTS_KEY, JSON.stringify(defaultClients));
-    if (!localStorage.getItem(CASES_KEY)) localStorage.setItem(CASES_KEY, JSON.stringify(defaultCases));
-    if (!localStorage.getItem(INVOICES_KEY)) localStorage.setItem(INVOICES_KEY, JSON.stringify(defaultInvoices));
-    if (!localStorage.getItem(CONTRACTS_KEY)) localStorage.setItem(CONTRACTS_KEY, JSON.stringify(defaultContracts));
-
-    let clients = JSON.parse(localStorage.getItem(CLIENTS_KEY));
-    let cases = JSON.parse(localStorage.getItem(CASES_KEY));
-    let invoices = JSON.parse(localStorage.getItem(INVOICES_KEY));
-    let contracts = JSON.parse(localStorage.getItem(CONTRACTS_KEY));
-
-    // 2. Parse URL and Setup Firm Branding
-    const DETAILS_KEY = 'lexora_firm_details_db';
-    const defaultDetails = {
-        firm: "Omatsuli Legal Associates",
-        practice: "Corporate Law Practice",
-        address: "120 Silicon Valley Blvd, Suite 400",
-        phone: "+1 (555) 898-0320",
-        email: "billing@lexora.app"
-    };
-
-    if (!localStorage.getItem(DETAILS_KEY)) {
-        localStorage.setItem(DETAILS_KEY, JSON.stringify(defaultDetails));
-    }
-
-    const urlParams = new URLSearchParams(window.location.search);
-    const qFirm = urlParams.get('firm');
-    const qPractice = urlParams.get('practice');
-    const staffInvites = urlParams.get('staff') || '';
-
-    let firmDetails = JSON.parse(localStorage.getItem(DETAILS_KEY));
-    if (qFirm || qPractice) {
-        if (qFirm) firmDetails.firm = qFirm;
-        if (qPractice) firmDetails.practice = qPractice;
-        localStorage.setItem(DETAILS_KEY, JSON.stringify(firmDetails));
-    }
-
-    window.applyFirmBranding = function() {
-        const details = JSON.parse(localStorage.getItem(DETAILS_KEY)) || defaultDetails;
-        
-        document.getElementById('display-firm-name').textContent = details.firm.toUpperCase();
-        document.getElementById('display-practice-area').textContent = `${details.practice} Workspace`;
-        document.getElementById('user-avatar').textContent = details.firm.charAt(0).toUpperCase();
-
-        const setFirm = document.getElementById('settings-firm-name');
-        if (setFirm) setFirm.value = details.firm;
-        const setPrac = document.getElementById('settings-practice-area');
-        if (setPrac) setPrac.value = details.practice;
-        const setAddr = document.getElementById('settings-firm-address');
-        if (setAddr) setAddr.value = details.address;
-        const setPhone = document.getElementById('settings-firm-phone');
-        if (setPhone) setPhone.value = details.phone;
-        const setEmail = document.getElementById('settings-firm-email');
-        if (setEmail) setEmail.value = details.email;
-    }
-    applyFirmBranding();
-
-    // Populate Staff widget list
-    const staffList = document.getElementById('portal-staff-list');
-    if (staffList) {
-        staffList.innerHTML = `<li>You (Host Administrator)</li>`;
-        if (staffInvites) {
-            staffInvites.split(',').forEach(email => {
-                const mail = email.trim();
-                if (mail) {
-                    staffList.innerHTML += `<li>${mail} <span class="badge-status inactive" style="font-size:0.6rem; padding:0 0.3rem;">Pending</span></li>`;
-                }
-            });
-        } else {
-            staffList.innerHTML += `<li>john@example.com <span class="badge-status inactive" style="font-size:0.6rem; padding:0 0.3rem;">Pending</span></li>`;
+            // Redraw all UI blocks
+            renderClientsTable();
+            renderMattersKanban();
+            renderOverviewCases();
+            populateSelectors();
+            updateDashboardMetrics();
+            renderCalendarDays();
+            renderAppointmentsList();
+            applyFirmBranding();
+            lucide.createIcons();
+        } catch (err) {
+            console.error("Error fetching database tables:", err);
         }
     }
 
@@ -182,7 +123,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <td><strong>${client.name}</strong></td>
                 <td>${client.email}</td>
                 <td>${client.practice}</td>
-                <td>$${client.balance.toLocaleString()}</td>
+                <td>$${parseInt(client.balance).toLocaleString()}</td>
                 <td><span class="badge-status active">Active</span></td>
                 <td>
                     <button class="btn btn-secondary btn-small" onclick="selectClientForInvoicing('${client.name}')">Bill Client</button>
@@ -242,12 +183,6 @@ document.addEventListener('DOMContentLoaded', () => {
             if(el) el.textContent = countsTracker[stage];
         });
 
-        // Update Overview metrics
-        const metricMatters = document.getElementById('metric-active-matters');
-        if (metricMatters) {
-            metricMatters.textContent = `${cases.length} Cases`;
-        }
-
         lucide.createIcons();
     }
 
@@ -257,12 +192,12 @@ document.addEventListener('DOMContentLoaded', () => {
         tbody.innerHTML = '';
         
         // Take top 3 recent cases
-        cases.slice(0, 3).forEach(item => {
+        cases.slice(-3).reverse().forEach(item => {
             const tr = document.createElement('tr');
             tr.innerHTML = `
                 <td><strong>${item.title}</strong></td>
                 <td>${item.client}</td>
-                <td><span class="status-dot green"></span> Open</td>
+                <td><span class="status-dot ${item.stage === 'closed' ? 'gray' : 'green'}"></span> ${item.stage === 'closed' ? 'Closed' : 'Open'}</td>
                 <td><span class="badge-status active" style="text-transform: capitalize;">${item.stage}</span></td>
             `;
             tbody.appendChild(tr);
@@ -288,20 +223,23 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // 7. Case advancement
     window.advanceCaseStage = function(caseId, stageName) {
-        cases = cases.map(c => {
-            if (c.id === caseId) {
-                c.stage = stageName;
-                showToast(`Case moved to ${stageName.toUpperCase()}`);
-            }
-            return c;
-        });
-        localStorage.setItem(CASES_KEY, JSON.stringify(cases));
-        renderMattersKanban();
-        renderOverviewCases();
+        fetch(`/api/cases/${caseId}/stage`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ stage: stageName })
+        })
+        .then(res => res.json())
+        .then(() => {
+            showToast(`Case moved to ${stageName.toUpperCase()}`);
+            triggerDBSyncNotification();
+            loadAllDatabaseTables();
+        })
+        .catch(err => console.error("Error advancing case stage:", err));
     }
 
-    // Modal Control
+    // Modal Controls
     const clientModal = document.getElementById('client-modal');
     window.openClientModal = function() {
         clientModal.classList.add('open');
@@ -325,29 +263,20 @@ document.addEventListener('DOMContentLoaded', () => {
         const practice = document.getElementById('new-client-practice').value;
         const deposit = parseFloat(document.getElementById('new-client-deposit').value) || 0;
 
-        const newClient = {
-            id: clients.length + 1,
-            name: name,
-            email: email,
-            practice: practice,
-            balance: deposit,
-            status: "Active"
-        };
-
-        clients.push(newClient);
-        
-        // Write to shared state
-        localStorage.setItem(CLIENTS_KEY, JSON.stringify(clients));
-        
-        // Refresh UI
-        renderClientsTable();
-        populateSelectors();
-        closeClientModal();
-        updateDashboardMetrics();
-        showToast("New Client registered successfully!");
-        
-        // Reset Form
-        document.getElementById('add-client-form').reset();
+        fetch('/api/clients', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name, email, practice, balance: deposit })
+        })
+        .then(res => res.json())
+        .then(() => {
+            closeClientModal();
+            showToast("New Client registered successfully!");
+            triggerDBSyncNotification();
+            loadAllDatabaseTables();
+            document.getElementById('add-client-form').reset();
+        })
+        .catch(err => console.error("Error submitting client form:", err));
     }
 
     window.submitCaseForm = function() {
@@ -355,29 +284,20 @@ document.addEventListener('DOMContentLoaded', () => {
         const client = document.getElementById('new-case-client').value;
         const stage = document.getElementById('new-case-stage').value;
 
-        const newCase = {
-            id: Date.now(),
-            title: title,
-            client: client,
-            stage: stage,
-            priority: "Mid",
-            attorney: "You"
-        };
-
-        cases.push(newCase);
-        
-        // Write to shared state
-        localStorage.setItem(CASES_KEY, JSON.stringify(cases));
-        
-        // Refresh UI
-        renderMattersKanban();
-        renderOverviewCases();
-        closeCaseModal();
-        updateDashboardMetrics();
-        showToast("New Case File initialized!");
-
-        // Reset
-        document.getElementById('add-case-form').reset();
+        fetch('/api/cases', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ title, client, stage, priority: "Mid", attorney: "You" })
+        })
+        .then(res => res.json())
+        .then(() => {
+            closeCaseModal();
+            showToast("New Case File initialized!");
+            triggerDBSyncNotification();
+            loadAllDatabaseTables();
+            document.getElementById('add-case-form').reset();
+        })
+        .catch(err => console.error("Error submitting case form:", err));
     }
 
     window.selectClientForInvoicing = function(clientName) {
@@ -388,7 +308,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // 7. Dynamic Invoice Generator
+    // 8. Dynamic Invoice Generator
     const invoiceSheet = document.getElementById('invoice-sheet');
     const printBtn = document.getElementById('btn-print-invoice');
 
@@ -404,107 +324,103 @@ document.addEventListener('DOMContentLoaded', () => {
         const taxes = subtotal * 0.08; // 8% tax
         const total = subtotal + taxes;
 
-        const invoiceId = Math.floor(Math.random() * 89999) + 10000;
         const dateString = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
 
-        // Save invoice to shared state
-        invoices.push({
-            id: invoiceId,
-            client: clientName,
-            date: dateString,
-            description: description,
-            amount: total,
-            hours: hours,
-            status: "Unpaid"
-        });
-        localStorage.setItem(INVOICES_KEY, JSON.stringify(invoices));
-        updateDashboardMetrics();
-
-        invoiceSheet.innerHTML = `
-            <div class="invoice-sheet">
-                <div class="invoice-sheet-header">
-                    <div class="invoice-sheet-brand">
-                        <svg viewBox="0 0 200 200" style="width:28px; height:28px;" id="invoice-sheet-logo">
-                          <!-- Logo path inserted dynamically -->
-                        </svg>
-                        <span>LEXORA</span>
+        fetch('/api/invoices', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ client: clientName, date: dateString, description, amount: total, hours })
+        })
+        .then(res => res.json())
+        .then(newInv => {
+            showToast("Invoice Drafted Successfully!");
+            triggerDBSyncNotification();
+            loadAllDatabaseTables();
+            
+            invoiceSheet.innerHTML = `
+                <div class="invoice-sheet">
+                    <div class="invoice-sheet-header">
+                        <div class="invoice-sheet-brand">
+                            <svg viewBox="0 0 200 200" style="width:28px; height:28px;" id="invoice-sheet-logo">
+                              <!-- Injected dynamically -->
+                            </svg>
+                            <span>LEXORA</span>
+                        </div>
+                        <div class="invoice-title-block">
+                            <h2>INVOICE</h2>
+                            <span>#INV-${newInv.id}</span>
+                        </div>
                     </div>
-                    <div class="invoice-title-block">
-                        <h2>INVOICE</h2>
-                        <span>#INV-${invoiceId}</span>
+
+                    <div class="invoice-meta-grid">
+                        <div class="inv-from-block">
+                            <strong>FROM:</strong>
+                            <span>${firmDetails.firm ? firmDetails.firm.toUpperCase() : 'LEXORA PARTNERS'}</span><br>
+                            <span>Workspace: ${firmDetails.practice || 'Corporate Law'}</span><br>
+                            <span>${firmDetails.email || 'billing@lexora.app'}</span>
+                        </div>
+                        <div class="inv-to-block" style="text-align: right;">
+                            <strong>BILL TO:</strong>
+                            <span>${clientName}</span><br>
+                            <span>${clientObj.email}</span><br>
+                            <span>Date: ${dateString}</span>
+                        </div>
+                    </div>
+
+                    <table class="invoice-table">
+                        <thead>
+                            <tr>
+                                <th>Description of Services</th>
+                                <th style="text-align: center;">Hours</th>
+                                <th style="text-align: right;">Rate ($)</th>
+                                <th style="text-align: right;">Subtotal</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>${description}</td>
+                                <td style="text-align: center;">${hours}</td>
+                                <td style="text-align: right;">$${rate}</td>
+                                <td style="text-align: right;">$${subtotal.toLocaleString()}</td>
+                            </tr>
+                            <tr>
+                                <td colspan="3" style="text-align: right; border:none; font-weight:600;">Tax (8%):</td>
+                                <td style="text-align: right; border:none;">$${taxes.toLocaleString()}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <div class="invoice-totals">
+                        <span>Total Due:</span>
+                        <span>$${total.toLocaleString()}</span>
+                    </div>
+
+                    <div class="invoice-sheet-footer">
+                        <span>Thank you for your business. Payments are processed securely via Lexora Trust Accounts.</span>
                     </div>
                 </div>
+            `;
 
-                <div class="invoice-meta-grid">
-                    <div class="inv-from-block">
-                        <strong>FROM:</strong>
-                        <span>${firmName.toUpperCase()}</span><br>
-                        <span>Workspace: ${practiceArea}</span><br>
-                        <span>billing@lexora.app</span>
-                    </div>
-                    <div class="inv-to-block" style="text-align: right;">
-                        <strong>BILL TO:</strong>
-                        <span>${clientName}</span><br>
-                        <span>${clientObj.email}</span><br>
-                        <span>Date: ${dateString}</span>
-                    </div>
-                </div>
+            // Inject logo to invoice print mockup
+            fetch('assets/logo_icon_light.svg')
+                .then(r => r.text())
+                .then(svgText => {
+                    const parser = new DOMParser();
+                    const logoDoc = parser.parseFromString(svgText, 'image/svg+xml');
+                    const logo = document.getElementById('invoice-sheet-logo');
+                    if (logo) logo.innerHTML = logoDoc.documentElement.innerHTML;
+                });
 
-                <table class="invoice-table">
-                    <thead>
-                        <tr>
-                            <th>Description of Services</th>
-                            <th style="text-align: center;">Hours</th>
-                            <th style="text-align: right;">Rate ($)</th>
-                            <th style="text-align: right;">Subtotal</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td>${description}</td>
-                            <td style="text-align: center;">${hours}</td>
-                            <td style="text-align: right;">$${rate}</td>
-                            <td style="text-align: right;">$${subtotal.toLocaleString()}</td>
-                        </tr>
-                        <tr>
-                            <td colspan="3" style="text-align: right; border:none; font-weight:600;">Tax (8%):</td>
-                            <td style="text-align: right; border:none;">$${taxes.toLocaleString()}</td>
-                        </tr>
-                    </tbody>
-                </table>
-
-                <div class="invoice-totals">
-                    <span>Total Due:</span>
-                    <span>$${total.toLocaleString()}</span>
-                </div>
-
-                <div class="invoice-sheet-footer">
-                    <span>Thank you for your business. Payments are processed securely via Lexora Trust Accounts.</span>
-                </div>
-            </div>
-        `;
-
-        // Inject logo into invoice template
-        fetch('assets/logo_icon_light.svg')
-            .then(res => res.text())
-            .then(svgText => {
-                const parser = new DOMParser();
-                const doc = parser.parseFromString(svgText, 'image/svg+xml');
-                const logo = document.getElementById('invoice-sheet-logo');
-                if (logo) {
-                    logo.innerHTML = doc.documentElement.innerHTML;
-                }
-            });
-
-        printBtn.removeAttribute('disabled');
-        showToast("Invoice Drafted Successfully!");
+            printBtn.removeAttribute('disabled');
+        })
+        .catch(err => console.error("Error generating invoice:", err));
     }
 
     window.printInvoiceSheet = function() {
         window.print();
     }
 
-    // 8. AI Drafting Workbench
+    // 9. AI Drafting Workbench
     const draftText = document.getElementById('draft-textbox');
     const docTitle = document.getElementById('draft-doc-title');
 
@@ -516,89 +432,35 @@ document.addEventListener('DOMContentLoaded', () => {
         
         let templateContent = "";
         let titleName = "";
+        const fName = firmDetails.firm || "Omatsuli Legal Associates";
+        const pArea = firmDetails.practice || "Corporate Law";
 
         if (type === 'nda') {
             titleName = "MUTUAL NON-DISCLOSURE AGREEMENT";
-            templateContent = `MUTUAL NON-DISCLOSURE AGREEMENT
---------------------------------------------------
-This Mutual Non-Disclosure Agreement ("Agreement") is made and entered into this ${new Date().toLocaleDateString('en-US')} ("Effective Date"), by and between:
-
-FIRM REPRESENTING: ${firmName.toUpperCase()} ("Disclosing Party"),
-AND
-CLIENT PARTY: ${clientName.toUpperCase()} ("Recipient Party").
-
-1. Purpose: The parties wish to enter into discussions regarding potential business relationships. In the course of these discussions, it may be necessary for either party to disclose confidential intellectual property or business projections.
-
-2. Confidential Information: "Confidential Information" refers to any proprietary data, trade secrets, software code, financials, or legal strategies disclosed by one party to the other that is marked as confidential or should reasonably be understood to be proprietary.
-
-3. Term of Protection: The obligations of confidentiality, non-use and non-disclosure set forth herein shall survive the termination of this Agreement for a period of five (5) years following the Effective Date.
-
-IN WITNESS WHEREOF, the parties hereto have executed this Mutual Non-Disclosure Agreement as of the Effective Date written above.
-
-For: ${firmName.toUpperCase()}
-Sign: ____________________________
-
-For: ${clientName.toUpperCase()}
-Sign: ____________________________`;
+            templateContent = `MUTUAL NON-DISCLOSURE AGREEMENT\n--------------------------------------------------\nThis Mutual Non-Disclosure Agreement ("Agreement") is made and entered into this ${new Date().toLocaleDateString('en-US')} ("Effective Date"), by and between:\n\nFIRM REPRESENTING: ${fName.toUpperCase()} ("Disclosing Party"),\nAND\nCLIENT PARTY: ${clientName.toUpperCase()} ("Recipient Party").\n\n1. Purpose: The parties wish to enter into discussions regarding potential business relationships. In the course of these discussions, it may be necessary for either party to disclose confidential intellectual property.\n\n2. Confidential Information: "Confidential Information" refers to proprietary data, trade secrets, software code, or legal strategies.\n\n3. Term of Protection: Obligations of confidentiality shall survive for five (5) years.\n\nFor: ${fName.toUpperCase()}\nSign: ____________________________\n\nFor: ${clientName.toUpperCase()}\nSign: ____________________________`;
         } else if (type === 'retainer') {
             titleName = "ATTORNEY RETAINER AGREEMENT";
-            templateContent = `ATTORNEY RETAINER AGREEMENT & ENGAGEMENT
---------------------------------------------------
-This Retainer Agreement is executed by and between:
-
-LAW CHAMBER: ${firmName.toUpperCase()} (hereinafter "Attorney"),
-AND
-CLIENT: ${clientName.toUpperCase()} (hereinafter "Client").
-
-1. Scope of Representation: Client retains Attorney to perform legal counsel services related specifically to: ${practiceArea}. Attorney shall provide counseling, drafting, litigation, and regulatory support as required.
-
-2. Trust Retainer Deposit: Client agrees to pay an initial retainer deposit of $5,000 to be held in Attorney's Interest on Lawyers Trust Accounts (IOLTA). Attorney shall deduct billable hours from this account at the standard hourly rates described in Schedule A.
-
-3. Fractional Hourly Billing: Attorney shall log work in increments of one-tenth (1/10th) of an hour. The primary billing attorney rate is set to $350/hour.
-
-Executed on this ${new Date().toLocaleDateString('en-US')}.
-
-Attorney Sign: ___________________________
-Client Sign:   ___________________________`;
+            templateContent = `ATTORNEY RETAINER AGREEMENT & ENGAGEMENT\n--------------------------------------------------\nThis Retainer Agreement is executed by and between:\n\nLAW CHAMBER: ${fName.toUpperCase()} (hereinafter "Attorney"),\nAND\nCLIENT: ${clientName.toUpperCase()} (hereinafter "Client").\n\n1. Scope of Representation: Client retains Attorney to perform legal counsel services related specifically to: ${pArea}.\n\n2. Trust Retainer Deposit: Client agrees to pay an initial retainer deposit of $5,000 to IOLTA.\n\nAttorney Sign: ___________________________\nClient Sign:   ___________________________`;
         } else {
             titleName = "CONSULTING SERVICES CONTRACT";
-            templateContent = `PROFESSIONAL CONSULTING SERVICES CONTRACT
---------------------------------------------------
-This Agreement is entered into by:
-
-CLIENT: ${clientName.toUpperCase()} ("Client"),
-AND
-CONSULTANT: ${firmName.toUpperCase()} ("Consultant").
-
-1. Services: Consultant agrees to provide professional corporate consulting, regulatory review, and technology integration parameters.
-
-2. Intellectual Property Assignment: All intellectual property, legal templates, and code generated by Consultant in the course of performing these services shall assign to Client immediately upon receipt of full payment for related invoices.
-
-3. Compensation: Client shall clear outstanding invoices within fifteen (15) business days of receipt. Overdue balances shall accumulate interest at 1.5% per month.
-
-Signed:
-
-For Client: ___________________________
-For Consultant: _______________________`;
+            templateContent = `PROFESSIONAL CONSULTING SERVICES CONTRACT\n--------------------------------------------------\nThis Agreement is entered into by:\n\nCLIENT: ${clientName.toUpperCase()} ("Client"),\nAND\nCONSULTANT: ${fName.toUpperCase()} ("Consultant").\n\n1. Services: Consultant agrees to provide professional corporate consulting, regulatory review, and technology integration.\n\nFor Client: ___________________________\nFor Consultant: _______________________`;
         }
 
         setTimeout(() => {
-            docTitle.textContent = titleName;
-            draftText.value = templateContent;
-            
-            // Save contract to shared database
-            const docId = Math.floor(Math.random() * 8999) + 1000;
-            contracts.push({
-                id: docId,
-                client: clientName,
-                title: titleName,
-                type: type,
-                status: 'Draft',
-                content: templateContent
-            });
-            localStorage.setItem(CONTRACTS_KEY, JSON.stringify(contracts));
-            
-            showToast("AI Document Synthesized!");
+            fetch('/api/contracts', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ client: clientName, title: titleName, type, content: templateContent })
+            })
+            .then(res => res.json())
+            .then(() => {
+                docTitle.textContent = titleName;
+                draftText.value = templateContent;
+                showToast("AI Document Synthesized!");
+                triggerDBSyncNotification();
+                loadAllDatabaseTables();
+            })
+            .catch(err => console.error("Error creating AI draft:", err));
         }, 1200);
     }
 
@@ -612,108 +474,7 @@ For Consultant: _______________________`;
         });
     }
 
-    // 9. AI Quick Assistant Widget
-    const aiInput = document.getElementById('ai-quick-query');
-    const aiOutput = document.getElementById('ai-quick-output');
-    const aiBtn = document.getElementById('btn-quick-ai');
-
-    if (aiBtn) {
-        aiBtn.addEventListener('click', () => {
-            const query = aiInput.value.trim().toLowerCase();
-            if (!query) return;
-
-            aiOutput.style.display = 'block';
-            aiOutput.textContent = "AI Assistant: Mapping vectors & analyzing query...";
-
-            setTimeout(() => {
-                if (query.includes('nda') || query.includes('disclosure')) {
-                    aiOutput.textContent = `Lexora AI Advisor: Standard NDAs should include:
-- Reciprocal confidentiality obligations.
-- Survival period limited to 3-5 years (indefinite survival is a risk).
-- Exclusions for public knowledge or independent creation.`;
-                } else if (query.includes('delaware') || query.includes('llc')) {
-                    aiOutput.textContent = `Lexora AI Advisor: Delaware LLC requirements:
-- Registered Agent in DE.
-- Certificate of Formation filed with DE Division of Corporations.
-- Annual Franchise Tax of $300 (due June 1st).
-- Written Operating Agreement.`;
-                } else {
-                    aiOutput.textContent = `Lexora AI Advisor: Based on standard practice areas under ${practiceArea}, I recommend referencing local bar association rules. For contract generation, please use the 'AI Drafting' workbench tab.`;
-                }
-            }, 1000);
-        });
-    }
-
-    // Toast Notifications
-    function showToast(message) {
-        const toast = document.getElementById('toast');
-        const toastMessage = document.getElementById('toast-message');
-        toastMessage.textContent = message;
-        toast.classList.add('show');
-        setTimeout(() => {
-            toast.classList.remove('show');
-        }, 2500);
-    }
-
-    // Filter Clients Functionality
-    window.filterClients = function() {
-        const query = document.getElementById('search-clients').value.toLowerCase();
-        const rows = document.querySelectorAll('#clients-table-body tr');
-        
-        rows.forEach(row => {
-            const text = row.textContent.toLowerCase();
-            if (text.includes(query)) {
-                row.style.display = '';
-            } else {
-                row.style.display = 'none';
-            }
-        });
-    }
-
-    // 9. Update Metrics Function
-    function updateDashboardMetrics() {
-        const trustSum = clients.reduce((acc, c) => acc + c.balance, 0);
-        const outstandingSum = invoices.reduce((acc, inv) => acc + (inv.status === 'Unpaid' ? inv.amount : 0), 0);
-        
-        const totalHours = invoices.reduce((acc, inv) => {
-            return acc + (inv.hours || (inv.amount / 350));
-        }, 0);
-
-        const trustMetric = document.getElementById('metric-trust-balance');
-        if (trustMetric) trustMetric.textContent = `$${trustSum.toLocaleString()}`;
-
-        const hoursMetric = document.getElementById('metric-hours-worked');
-        if (hoursMetric) hoursMetric.textContent = `${totalHours.toFixed(1)} hrs`;
-
-        const activeMattersMetric = document.getElementById('metric-active-matters');
-        if (activeMattersMetric) activeMattersMetric.textContent = `${cases.length} Cases`;
-
-        const outstandingMetric = document.getElementById('metric-outstanding');
-        if (outstandingMetric) outstandingMetric.textContent = `$${outstandingSum.toLocaleString()}`;
-
-        // Reports metrics
-        const reportTrust = document.getElementById('report-deposited-trust');
-        if (reportTrust) reportTrust.textContent = `$${trustSum.toLocaleString()}`;
-
-        const reportOut = document.getElementById('report-outstanding-billed');
-        if (reportOut) reportOut.textContent = `$${outstandingSum.toLocaleString()}`;
-    }
-
-    // 10. Calendar & Appointments State Setup
-    const APPOINTMENTS_KEY = 'lexora_appointments_db';
-    const defaultAppointments = [
-        { id: 7001, client: "Apex Biotech Corp", title: "Series A Legal Audit", date: "2026-07-23", time: "10:00", type: "Consultation" },
-        { id: 7002, client: "Nexus Venture Fund", title: "Bylaws Review Advisory", date: "2026-07-24", time: "14:00", type: "Hearing" }
-    ];
-
-    if (!localStorage.getItem(APPOINTMENTS_KEY)) {
-        localStorage.setItem(APPOINTMENTS_KEY, JSON.stringify(defaultAppointments));
-    }
-    let appointments = JSON.parse(localStorage.getItem(APPOINTMENTS_KEY));
-
-    let currentYear = 2026;
-    let currentMonth = 6; // July (0-indexed)
-
+    // 10. Appointments Calendar & Monthly Grid
     window.renderCalendarDays = function() {
         const container = document.getElementById('calendar-days-container');
         if (!container) return;
@@ -726,7 +487,6 @@ For Consultant: _______________________`;
         const lastDay = new Date(currentYear, currentMonth + 1, 0).getDate();
         const prevLastDay = new Date(currentYear, currentMonth, 0).getDate();
         
-        // Overflow days from previous month
         for (let x = firstDayIndex; x > 0; x--) {
             const day = document.createElement('div');
             day.className = 'calendar-day other-month';
@@ -734,7 +494,6 @@ For Consultant: _______________________`;
             container.appendChild(day);
         }
         
-        // Days of current month
         for (let i = 1; i <= lastDay; i++) {
             const day = document.createElement('div');
             day.className = 'calendar-day';
@@ -759,7 +518,6 @@ For Consultant: _______________________`;
             container.appendChild(day);
         }
         
-        // Next month overflow cells
         const totalCells = firstDayIndex + lastDay;
         const nextMonthCells = 42 - totalCells;
         for (let j = 1; j <= nextMonthCells; j++) {
@@ -820,56 +578,22 @@ For Consultant: _______________________`;
         const date = document.getElementById('appt-date').value;
         const time = document.getElementById('appt-time').value;
 
-        const newAppt = {
-            id: Date.now(),
-            client: clientName,
-            title: title,
-            date: date,
-            time: time,
-            type: "Consultation"
-        };
-
-        appointments.push(newAppt);
-        localStorage.setItem(APPOINTMENTS_KEY, JSON.stringify(appointments));
-        
-        renderCalendarDays();
-        renderAppointmentsList();
-        showToast("New meeting consultation scheduled!");
-        
-        document.getElementById('add-appointment-form').reset();
+        fetch('/api/appointments', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ client: clientName, title, date, time, type: "Consultation" })
+        })
+        .then(res => res.json())
+        .then(() => {
+            showToast("New meeting consultation scheduled!");
+            triggerDBSyncNotification();
+            loadAllDatabaseTables();
+            document.getElementById('add-appointment-form').reset();
+        })
+        .catch(err => console.error("Error scheduling appointment:", err));
     }
 
-    // 11. Listen to LocalStorage updates from Client Portal!
-    window.addEventListener('storage', (e) => {
-        if (e.key === CLIENTS_KEY) {
-            clients = JSON.parse(e.newValue);
-            renderClientsTable();
-            populateSelectors();
-            updateDashboardMetrics();
-        }
-        if (e.key === CASES_KEY) {
-            cases = JSON.parse(e.newValue);
-            renderMattersKanban();
-            renderOverviewCases();
-            updateDashboardMetrics();
-        }
-        if (e.key === INVOICES_KEY) {
-            invoices = JSON.parse(e.newValue);
-            updateDashboardMetrics();
-        }
-        if (e.key === CONTRACTS_KEY) {
-            contracts = JSON.parse(e.newValue);
-        }
-        if (e.key === APPOINTMENTS_KEY) {
-            appointments = JSON.parse(e.newValue || '[]');
-            renderCalendarDays();
-            renderAppointmentsList();
-        }
-        if (e.key === DETAILS_KEY) {
-            applyFirmBranding();
-        }
-    });
-
+    // 11. Firm Settings Submission
     window.submitSettingsForm = function() {
         const firm = document.getElementById('settings-firm-name').value.trim();
         const practice = document.getElementById('settings-practice-area').value.trim();
@@ -877,19 +601,87 @@ For Consultant: _______________________`;
         const phone = document.getElementById('settings-firm-phone').value.trim();
         const email = document.getElementById('settings-firm-email').value.trim();
         
-        const newDetails = { firm, practice, address, phone, email };
-        localStorage.setItem(DETAILS_KEY, JSON.stringify(newDetails));
+        fetch('/api/settings', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ firm, practice, address, phone, email })
+        })
+        .then(res => res.json())
+        .then(() => {
+            showToast("Workspace branding configurations saved!");
+            triggerDBSyncNotification();
+            loadAllDatabaseTables();
+        })
+        .catch(err => console.error("Error saving workspace settings:", err));
+    }
+
+    function applyFirmBranding() {
+        if (!firmDetails.firm) return;
+        document.getElementById('display-firm-name').textContent = firmDetails.firm.toUpperCase();
+        document.getElementById('display-practice-area').textContent = `${firmDetails.practice} Workspace`;
+        document.getElementById('user-avatar').textContent = firmDetails.firm.charAt(0).toUpperCase();
+
+        const setFirm = document.getElementById('settings-firm-name');
+        if (setFirm) setFirm.value = firmDetails.firm;
+        const setPrac = document.getElementById('settings-practice-area');
+        if (setPrac) setPrac.value = firmDetails.practice;
+        const setAddr = document.getElementById('settings-firm-address');
+        if (setAddr) setAddr.value = firmDetails.address;
+        const setPhone = document.getElementById('settings-firm-phone');
+        if (setPhone) setPhone.value = firmDetails.phone;
+        const setEmail = document.getElementById('settings-firm-email');
+        if (setEmail) setEmail.value = firmDetails.email;
+    }
+
+    function updateDashboardMetrics() {
+        const trustSum = clients.reduce((acc, c) => acc + parseInt(c.balance), 0);
+        const outstandingSum = invoices.reduce((acc, inv) => acc + (inv.status === 'Unpaid' ? parseFloat(inv.amount) : 0), 0);
         
-        applyFirmBranding();
-        showToast("Workspace branding configurations saved!");
+        const totalHours = invoices.reduce((acc, inv) => {
+            return acc + parseFloat(inv.hours || (inv.amount / 350));
+        }, 0);
+
+        const trustMetric = document.getElementById('metric-trust-balance');
+        if (trustMetric) trustMetric.textContent = `$${trustSum.toLocaleString()}`;
+
+        const hoursMetric = document.getElementById('metric-hours-worked');
+        if (hoursMetric) hoursMetric.textContent = `${totalHours.toFixed(1)} hrs`;
+
+        const activeMattersMetric = document.getElementById('metric-active-matters');
+        if (activeMattersMetric) activeMattersMetric.textContent = `${cases.length} Cases`;
+
+        const outstandingMetric = document.getElementById('metric-outstanding');
+        if (outstandingMetric) outstandingMetric.textContent = `$${outstandingSum.toLocaleString()}`;
+
+        const reportTrust = document.getElementById('report-deposited-trust');
+        if (reportTrust) reportTrust.textContent = `$${trustSum.toLocaleString()}`;
+
+        const reportOut = document.getElementById('report-outstanding-billed');
+        if (reportOut) reportOut.textContent = `$${outstandingSum.toLocaleString()}`;
+    }
+
+    // 12. State Sync Pulse
+    function triggerDBSyncNotification() {
+        localStorage.setItem('lexora_db_sync_trigger', Date.now().toString());
+    }
+
+    window.addEventListener('storage', (e) => {
+        if (e.key === 'lexora_db_sync_trigger') {
+            loadAllDatabaseTables();
+        }
+    });
+
+    // Toast alert utility
+    function showToast(message) {
+        const toast = document.getElementById('toast');
+        const toastMessage = document.getElementById('toast-message');
+        toastMessage.textContent = message;
+        toast.classList.add('show');
+        setTimeout(() => {
+            toast.classList.remove('show');
+        }, 2500);
     }
 
     // Startup Initializations
-    renderClientsTable();
-    renderMattersKanban();
-    renderOverviewCases();
-    populateSelectors();
-    updateDashboardMetrics();
-    renderCalendarDays();
-    renderAppointmentsList();
+    loadAllDatabaseTables();
 });

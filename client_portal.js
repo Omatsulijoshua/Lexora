@@ -1,85 +1,72 @@
-// Lexora Client Portal Script
+// Lexora Client Portal Script (Database Sync Enabled)
 
 document.addEventListener('DOMContentLoaded', () => {
-    // 1. Setup Shared Keys
-    const CLIENTS_KEY = 'lexora_clients_db';
-    const CASES_KEY = 'lexora_cases_db';
-    const INVOICES_KEY = 'lexora_invoices_db';
-    const CONTRACTS_KEY = 'lexora_contracts_db';
-    const APPOINTMENTS_KEY = 'lexora_appointments_db';
+    // 1. Client-side state arrays
+    let clients = [];
+    let cases = [];
+    let invoices = [];
+    let contracts = [];
+    let appointments = [];
+    let firmDetails = {};
 
-    // 2. Default Seed Data (used if localStorage is empty)
-    const defaultClients = [
-        { id: 1, name: "Apex Biotech Corp", email: "legal@apexbiotech.com", practice: "Corporate Law", balance: 15000, status: "Active" },
-        { id: 2, name: "Nexus Venture Fund", email: "intake@nexusfund.io", practice: "Corporate Law", balance: 25000, status: "Active" },
-        { id: 3, name: "Silverline Properties", email: "ops@silverline.com", practice: "Real Estate", balance: 5000, status: "Active" },
-    ];
+    let activeClient = sessionStorage.getItem('lexora_active_client') || '';
 
-    const defaultCases = [
-        { id: 101, title: "Series A Financing Audit", client: "Apex Biotech Corp", stage: "research", priority: "High", attorney: "You" },
-        { id: 102, title: "Bylaws Drafting & Review", client: "Nexus Venture Fund", stage: "drafting", priority: "Low", attorney: "You" },
-        { id: 103, title: "Commercial Lease Negotiation", client: "Silverline Properties", stage: "intake", priority: "Mid", attorney: "You" },
-        { id: 104, title: "IP License Agreement", client: "Apex Biotech Corp", stage: "drafting", priority: "High", attorney: "You" }
-    ];
+    // 2. Fetch and Load Database Tables from Server APIs
+    async function loadAllDatabaseTables() {
+        try {
+            const [clientsRes, casesRes, invoicesRes, contractsRes, appointmentsRes, settingsRes] = await Promise.all([
+                fetch('/api/clients').then(res => res.json()),
+                fetch('/api/cases').then(res => res.json()),
+                fetch('/api/invoices').then(res => res.json()),
+                fetch('/api/contracts').then(res => res.json()),
+                fetch('/api/appointments').then(res => res.json()),
+                fetch('/api/settings').then(res => res.json())
+            ]);
 
-    const defaultInvoices = [
-        { id: 9001, client: "Apex Biotech Corp", date: "July 21, 2026", description: "Bylaw review & retainer setup", amount: 4200, status: "Unpaid" },
-        { id: 9002, client: "Nexus Venture Fund", date: "July 20, 2026", description: "Series A term sheet consulting", amount: 8500, status: "Paid" },
-        { id: 9003, client: "Silverline Properties", date: "July 18, 2026", description: "Lease draft consultation", amount: 1500, status: "Unpaid" }
-    ];
+            clients = clientsRes;
+            cases = casesRes;
+            invoices = invoicesRes;
+            contracts = contractsRes;
+            appointments = appointmentsRes;
+            firmDetails = settingsRes;
 
-    const defaultContracts = [
-        { id: 8001, client: "Apex Biotech Corp", title: "Mutual NDA Agreement", type: "nda", status: "Draft", content: `MUTUAL NON-DISCLOSURE AGREEMENT\n-------------------------------\nThis Mutual NDA is made between OMATSULI LEGAL ASSOCIATES and APEX BIOTECH CORP.\n\nRecipient agrees to hold confidential intellectual property in escrow for a period of 5 years.` },
-        { id: 8002, client: "Nexus Venture Fund", title: "Attorney Retainer Engagement", type: "retainer", status: "Signed", content: `ATTORNEY RETAINER AGREEMENT\n---------------------------\nThis Engagement Contract assigns corporate services to Nexus Venture Fund at a rate of $350/hour.` }
-    ];
+            // Re-populate client login dropdown selector
+            populateLoginSelector();
 
-    const defaultAppointments = [
-        { id: 7001, client: "Apex Biotech Corp", title: "Series A Legal Audit", date: "2026-07-23", time: "10:00", type: "Consultation" },
-        { id: 7002, client: "Nexus Venture Fund", title: "Bylaws Review Advisory", date: "2026-07-24", time: "14:00", type: "Hearing" }
-    ];
-
-    // Seed database if empty
-    function initializeStorage() {
-        if (!localStorage.getItem(CLIENTS_KEY)) localStorage.setItem(CLIENTS_KEY, JSON.stringify(defaultClients));
-        if (!localStorage.getItem(CASES_KEY)) localStorage.setItem(CASES_KEY, JSON.stringify(defaultCases));
-        if (!localStorage.getItem(INVOICES_KEY)) localStorage.setItem(INVOICES_KEY, JSON.stringify(defaultInvoices));
-        if (!localStorage.getItem(CONTRACTS_KEY)) localStorage.setItem(CONTRACTS_KEY, JSON.stringify(defaultContracts));
-        if (!localStorage.getItem(APPOINTMENTS_KEY)) localStorage.setItem(APPOINTMENTS_KEY, JSON.stringify(defaultAppointments));
-    }
-    initializeStorage();
-
-    // Load Local Data variables
-    let clients = JSON.parse(localStorage.getItem(CLIENTS_KEY));
-    let cases = JSON.parse(localStorage.getItem(CASES_KEY));
-    let invoices = JSON.parse(localStorage.getItem(INVOICES_KEY));
-    let contracts = JSON.parse(localStorage.getItem(CONTRACTS_KEY));
-    let appointments = JSON.parse(localStorage.getItem(APPOINTMENTS_KEY));
-
-    // 3. Setup Firm Details Branding
-    const DETAILS_KEY = 'lexora_firm_details_db';
-    const defaultDetails = {
-        firm: "Omatsuli Legal Associates",
-        practice: "Corporate Law Practice",
-        address: "120 Silicon Valley Blvd, Suite 400",
-        phone: "+1 (555) 898-0320",
-        email: "billing@lexora.app"
-    };
-
-    if (!localStorage.getItem(DETAILS_KEY)) {
-        localStorage.setItem(DETAILS_KEY, JSON.stringify(defaultDetails));
+            // Refresh active client views if authenticated
+            if (activeClient) {
+                renderOverviewMilestones();
+                renderClientInvoices();
+                renderClientDocuments();
+                renderClientAppointmentsList();
+                applyFirmBranding();
+            }
+            lucide.createIcons();
+        } catch (err) {
+            console.error("Error fetching client database tables:", err);
+        }
     }
 
-    function applyFirmBranding() {
-        const details = JSON.parse(localStorage.getItem(DETAILS_KEY)) || defaultDetails;
-        const displayHost = document.getElementById('display-firm-host');
-        if (displayHost) displayHost.textContent = details.firm.toUpperCase();
+    function populateLoginSelector() {
+        const clientSelect = document.getElementById('client-select-login');
+        if (!clientSelect) return;
         
-        const payFirm = document.getElementById('pay-firm-name');
-        if (payFirm) payFirm.textContent = details.firm.toUpperCase();
-    }
-    applyFirmBranding();
+        const currentSelectedVal = clientSelect.value;
+        clientSelect.innerHTML = '';
+        
+        clients.forEach(c => {
+            const opt = document.createElement('option');
+            opt.value = c.name;
+            opt.textContent = c.name;
+            clientSelect.appendChild(opt);
+        });
 
-    // 4. Inject Logo Icons
+        if (currentSelectedVal) {
+            clientSelect.value = currentSelectedVal;
+        }
+    }
+
+    // 3. Inject Logo Icons
     const logoSlots = ['login-logo-icon', 'sidebar-logo-icon'];
     fetch('assets/logo_icon_light.svg')
         .then(res => res.text())
@@ -105,19 +92,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const portalMain = document.getElementById('portal-main');
     const clientDisplayName = document.getElementById('client-display-name');
 
-    // Populate clients login selector
-    if (clientSelect) {
-        clientSelect.innerHTML = '';
-        clients.forEach(c => {
-            const opt = document.createElement('option');
-            opt.value = c.name;
-            opt.textContent = c.name;
-            clientSelect.appendChild(opt);
-        });
-    }
-
-    let activeClient = sessionStorage.getItem('lexora_active_client') || '';
-
     window.authenticateClient = function() {
         const clientName = clientSelect.value;
         if (!clientName) return;
@@ -135,6 +109,7 @@ document.addEventListener('DOMContentLoaded', () => {
         renderClientInvoices();
         renderClientDocuments();
         renderClientAppointmentsList();
+        applyFirmBranding();
         showToast(`Secure session authorized for ${clientName}`);
         
         lucide.createIcons();
@@ -152,15 +127,6 @@ document.addEventListener('DOMContentLoaded', () => {
         loginGate.style.display = 'none';
         portalMain.style.display = 'flex';
         clientDisplayName.textContent = activeClient.toUpperCase();
-        
-        // Trigger render
-        setTimeout(() => {
-            renderOverviewMilestones();
-            renderClientInvoices();
-            renderClientDocuments();
-            renderClientAppointmentsList();
-            lucide.createIcons();
-        }, 100);
     }
 
     // 5. Sidebar Router
@@ -205,18 +171,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 7. Render Views Logic
     function renderOverviewMilestones() {
-        // Find cases matching this client
         const clientCases = cases.filter(c => c.client === activeClient);
         const caseTitleText = document.getElementById('active-case-title');
         const progressBar = document.getElementById('milestone-progress-bar');
         
-        // Timeline DOM elements
         const stepIntake = document.getElementById('step-intake');
         const stepResearch = document.getElementById('step-research');
         const stepDrafting = document.getElementById('step-drafting');
         const stepClosed = document.getElementById('step-closed');
 
-        // Reset timeline styles
         [stepIntake, stepResearch, stepDrafting, stepClosed].forEach(step => {
             step.className = 'timeline-step';
         });
@@ -227,11 +190,9 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        // Take primary active case
         const activeCase = clientCases[0];
         caseTitleText.textContent = activeCase.title;
 
-        // Set progress width and active states
         let progressWidth = "0%";
         if (activeCase.stage === 'intake') {
             progressWidth = "0%";
@@ -278,7 +239,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <td><strong>#INV-${inv.id}</strong></td>
                 <td>${inv.date}</td>
                 <td>${inv.description}</td>
-                <td class="gold-text"><strong>$${inv.amount.toLocaleString()}</strong></td>
+                <td class="gold-text"><strong>$${parseFloat(inv.amount).toLocaleString()}</strong></td>
                 <td>
                     <span class="badge-status ${inv.status === 'Paid' ? 'active' : 'inactive'}">${inv.status}</span>
                 </td>
@@ -325,10 +286,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const payTotalDisplay = document.getElementById('pay-total-amount');
     
     let activePayingInvId = null;
+    let activePayingInvAmt = 0;
 
     window.openPaymentModal = function(invoiceId, amount) {
         activePayingInvId = invoiceId;
-        payTotalDisplay.textContent = `$${amount.toLocaleString()}`;
+        activePayingInvAmt = amount;
+        payTotalDisplay.textContent = `$${parseFloat(amount).toLocaleString()}`;
         paymentModal.classList.add('open');
     };
 
@@ -343,37 +306,25 @@ document.addEventListener('DOMContentLoaded', () => {
         payBtn.disabled = true;
         payBtn.textContent = "Processing Trust Escrow Authorization...";
 
-        setTimeout(() => {
-            // Update status in local variable
-            invoices = invoices.map(inv => {
-                if (inv.id === activePayingInvId) {
-                    inv.status = 'Paid';
-                }
-                return inv;
-            });
-
-            // Write back to storage
-            localStorage.setItem(INVOICES_KEY, JSON.stringify(invoices));
-            
-            // Sync clients ledger subtraction
-            clients = clients.map(c => {
-                if (c.name === activeClient) {
-                    // deduct invoice amount from trust balance
-                    const invObj = invoices.find(i => i.id === activePayingInvId);
-                    c.balance = Math.max(0, c.balance - (invObj ? invObj.amount : 0));
-                }
-                return c;
-            });
-            localStorage.setItem(CLIENTS_KEY, JSON.stringify(clients));
-
+        fetch(`/api/invoices/${activePayingInvId}/pay`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ clientName: activeClient, amount: activePayingInvAmt })
+        })
+        .then(res => res.json())
+        .then(() => {
             showToast("Trust account cleared. Invoice paid successfully!");
-            
-            // Re-render
-            renderClientInvoices();
+            triggerDBSyncNotification();
+            loadAllDatabaseTables();
             closePaymentModal();
             payBtn.disabled = false;
             payBtn.textContent = "Submit Secure Payment";
-        }, 1500);
+        })
+        .catch(err => {
+            console.error("Error processing card payment:", err);
+            payBtn.disabled = false;
+            payBtn.textContent = "Submit Secure Payment";
+        });
     };
 
     // 9. HTML5 Digital Signature Pad Canvas Logic
@@ -390,12 +341,11 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!signaturePad) return;
         
         canvasContext = signaturePad.getContext('2d');
-        canvasContext.strokeStyle = '#FFFFFF'; // Draw white stroke on dark bg
+        canvasContext.strokeStyle = '#FFFFFF';
         canvasContext.lineWidth = 2.5;
         canvasContext.lineCap = 'round';
         canvasContext.lineJoin = 'round';
 
-        // Mouse Handlers
         signaturePad.addEventListener('mousedown', (e) => {
             drawing = true;
             const pos = getMousePos(signaturePad, e);
@@ -414,7 +364,6 @@ document.addEventListener('DOMContentLoaded', () => {
             drawing = false;
         });
 
-        // Touch Handlers (for mobile/tablet)
         signaturePad.addEventListener('touchstart', (e) => {
             drawing = true;
             const touch = e.touches[0];
@@ -457,7 +406,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
         signatureModal.classList.add('open');
         
-        // Initialize canvas context and clear pad
         setTimeout(() => {
             initCanvas();
             clearSignatureCanvas();
@@ -476,7 +424,6 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     window.applyDigitalSignature = function() {
-        // Simulate checking if signature drawn (simple blank check)
         const blank = document.createElement('canvas');
         blank.width = signaturePad.width;
         blank.height = signaturePad.height;
@@ -486,26 +433,27 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        // Apply signature
-        contracts = contracts.map(doc => {
-            if (doc.id === activeSigningDocId) {
-                doc.status = 'Signed';
-                doc.content += `\n\n[DIGITALLY SIGNED VIA LEXORA CLIENT PORTAL]\nClient: ${activeClient.toUpperCase()}\nDate: ${new Date().toLocaleString()}`;
-            }
-            return doc;
-        });
+        const docObj = contracts.find(d => d.id === activeSigningDocId);
+        if (!docObj) return;
 
-        // Write back
-        localStorage.setItem(CONTRACTS_KEY, JSON.stringify(contracts));
-        showToast("Agreement signed and registered with legal counsel!");
+        const signedContent = `${docObj.content}\n\n[DIGITALLY SIGNED VIA LEXORA CLIENT PORTAL]\nClient: ${activeClient.toUpperCase()}\nDate: ${new Date().toLocaleString()}`;
 
-        // Refresh
-        renderClientDocuments();
-        closeSignatureModal();
+        fetch(`/api/contracts/${activeSigningDocId}/sign`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ content: signedContent })
+        })
+        .then(res => res.json())
+        .then(() => {
+            showToast("Agreement signed and registered with legal counsel!");
+            triggerDBSyncNotification();
+            loadAllDatabaseTables();
+            closeSignatureModal();
+        })
+        .catch(err => console.error("Error signing document:", err));
     };
 
     window.downloadSignedContract = function(title) {
-        // Simulate PDF download
         showToast(`Initiating download for: ${title}.pdf`);
     };
 
@@ -544,48 +492,38 @@ document.addEventListener('DOMContentLoaded', () => {
         const time = document.getElementById('book-appt-time').value;
         const notes = document.getElementById('book-appt-notes').value.trim();
         
-        const newAppt = {
-            id: Date.now(),
-            client: activeClient,
-            title: `${type} (${notes || 'No notes'})`,
-            date: date,
-            time: time,
-            type: "Consultation"
-        };
-        
-        // Push and sync state
-        appointments.push(newAppt);
-        localStorage.setItem(APPOINTMENTS_KEY, JSON.stringify(appointments));
-        
-        renderClientAppointmentsList();
-        showToast("Consultation requested successfully!");
-        
-        document.getElementById('book-appointment-form').reset();
+        fetch('/api/appointments', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ client: activeClient, title: `${type} (${notes || 'No notes'})`, date, time, type: "Consultation" })
+        })
+        .then(res => res.json())
+        .then(() => {
+            showToast("Consultation requested successfully!");
+            triggerDBSyncNotification();
+            loadAllDatabaseTables();
+            document.getElementById('book-appointment-form').reset();
+        })
+        .catch(err => console.error("Error booking appointment:", err));
     }
 
-    // 11. Listen to LocalStorage updates from Lawyer Dashboard!
+    function applyFirmBranding() {
+        if (!firmDetails.firm) return;
+        const displayHost = document.getElementById('display-firm-host');
+        if (displayHost) displayHost.textContent = firmDetails.firm.toUpperCase();
+        
+        const payFirm = document.getElementById('pay-firm-name');
+        if (payFirm) payFirm.textContent = firmDetails.firm.toUpperCase();
+    }
+
+    // 11. State Sync Heartbeat
+    function triggerDBSyncNotification() {
+        localStorage.setItem('lexora_db_sync_trigger', Date.now().toString());
+    }
+
     window.addEventListener('storage', (e) => {
-        if (e.key === CASES_KEY) {
-            cases = JSON.parse(e.newValue);
-            renderOverviewMilestones();
-        }
-        if (e.key === INVOICES_KEY) {
-            invoices = JSON.parse(e.newValue);
-            renderClientInvoices();
-        }
-        if (e.key === CONTRACTS_KEY) {
-            contracts = JSON.parse(e.newValue);
-            renderClientDocuments();
-        }
-        if (e.key === CLIENTS_KEY) {
-            clients = JSON.parse(e.newValue);
-        }
-        if (e.key === APPOINTMENTS_KEY) {
-            appointments = JSON.parse(e.newValue || '[]');
-            renderClientAppointmentsList();
-        }
-        if (e.key === DETAILS_KEY) {
-            applyFirmBranding();
+        if (e.key === 'lexora_db_sync_trigger') {
+            loadAllDatabaseTables();
         }
     });
 
@@ -599,4 +537,7 @@ document.addEventListener('DOMContentLoaded', () => {
             toast.classList.remove('show');
         }, 2500);
     }
+
+    // Startup Initializations
+    loadAllDatabaseTables();
 });
