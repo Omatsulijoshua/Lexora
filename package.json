@@ -4,7 +4,7 @@
   "description": "Lexora - All-in-One Legal Tech SaaS Platform Workspace",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js",
+    "start": "node migrate.js && node server.js",
     "migrate": "node migrate.js"
   },
   "dependencies": {
