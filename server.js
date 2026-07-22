@@ -243,8 +243,12 @@ app.get('*', (req, res) => {
     res.sendFile(path.join(__dirname, 'landing.html'));
 });
 
-// Start Express Listener
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-    console.log(`Lexora Server actively running on port ${PORT}`);
-});
+// Start Express Listener only when run directly
+if (require.main === module) {
+    const PORT = process.env.PORT || 3000;
+    app.listen(PORT, () => {
+        console.log(`Lexora Server actively running on port ${PORT}`);
+    });
+}
+
+module.exports = app;
