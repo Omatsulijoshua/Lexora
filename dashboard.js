@@ -240,8 +240,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const invSelect = document.getElementById('inv-client-select');
         const draftSelect = document.getElementById('draft-client-select');
         const newCaseClient = document.getElementById('new-case-client');
+        const apptClientSelect = document.getElementById('appt-client-select');
 
-        [invSelect, draftSelect, newCaseClient].forEach(sel => {
+        [invSelect, draftSelect, newCaseClient, apptClientSelect].forEach(sel => {
             if (sel) {
                 sel.innerHTML = '';
                 clients.forEach(c => {
@@ -658,7 +659,147 @@ For Consultant: _______________________`;
         if (outstandingMetric) outstandingMetric.textContent = `$${outstandingSum.toLocaleString()}`;
     }
 
-    // 10. Listen to LocalStorage updates from Client Portal!
+    // 10. Calendar & Appointments State Setup
+    const APPOINTMENTS_KEY = 'lexora_appointments_db';
+    const defaultAppointments = [
+        { id: 7001, client: "Apex Biotech Corp", title: "Series A Legal Audit", date: "2026-07-23", time: "10:00", type: "Consultation" },
+        { id: 7002, client: "Nexus Venture Fund", title: "Bylaws Review Advisory", date: "2026-07-24", time: "14:00", type: "Hearing" }
+    ];
+
+    if (!localStorage.getItem(APPOINTMENTS_KEY)) {
+        localStorage.setItem(APPOINTMENTS_KEY, JSON.stringify(defaultAppointments));
+    }
+    let appointments = JSON.parse(localStorage.getItem(APPOINTMENTS_KEY));
+
+    let currentYear = 2026;
+    let currentMonth = 6; // July (0-indexed)
+
+    window.renderCalendarDays = function() {
+        const container = document.getElementById('calendar-days-container');
+        if (!container) return;
+        container.innerHTML = '';
+        
+        const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+        document.getElementById('calendar-month-name').textContent = `${monthNames[currentMonth]} ${currentYear}`;
+        
+        const firstDayIndex = new Date(currentYear, currentMonth, 1).getDay();
+        const lastDay = new Date(currentYear, currentMonth + 1, 0).getDate();
+        const prevLastDay = new Date(currentYear, currentMonth, 0).getDate();
+        
+        // Overflow days from previous month
+        for (let x = firstDayIndex; x > 0; x--) {
+            const day = document.createElement('div');
+            day.className = 'calendar-day other-month';
+            day.innerHTML = `<span class="day-number">${prevLastDay - x + 1}</span>`;
+            container.appendChild(day);
+        }
+        
+        // Days of current month
+        for (let i = 1; i <= lastDay; i++) {
+            const day = document.createElement('div');
+            day.className = 'calendar-day';
+            
+            const isToday = (i === 22 && currentMonth === 6 && currentYear === 2026);
+            if (isToday) day.classList.add('today');
+            
+            const dateStr = `${currentYear}-${(currentMonth + 1).toString().padStart(2, '0')}-${i.toString().padStart(2, '0')}`;
+            
+            const dayAppts = appointments.filter(a => a.date === dateStr);
+            let eventsHtml = '<div class="day-events">';
+            dayAppts.forEach(a => {
+                const clientShort = a.client.split(' ')[0];
+                eventsHtml += `<div class="event-dot" title="${a.client}: ${a.title}">${clientShort}: ${a.title}</div>`;
+            });
+            eventsHtml += '</div>';
+
+            day.innerHTML = `
+                <span class="day-number">${i}</span>
+                ${eventsHtml}
+            `;
+            container.appendChild(day);
+        }
+        
+        // Next month overflow cells
+        const totalCells = firstDayIndex + lastDay;
+        const nextMonthCells = 42 - totalCells;
+        for (let j = 1; j <= nextMonthCells; j++) {
+            const day = document.createElement('div');
+            day.className = 'calendar-day other-month';
+            day.innerHTML = `<span class="day-number">${j}</span>`;
+            container.appendChild(day);
+        }
+    }
+
+    window.showPrevMonth = function() {
+        currentMonth--;
+        if (currentMonth < 0) {
+            currentMonth = 11;
+            currentYear--;
+        }
+        renderCalendarDays();
+    }
+
+    window.showNextMonth = function() {
+        currentMonth++;
+        if (currentMonth > 11) {
+            currentMonth = 0;
+            currentYear++;
+        }
+        renderCalendarDays();
+    }
+
+    window.renderAppointmentsList = function() {
+        const list = document.getElementById('dashboard-appointments-list');
+        if (!list) return;
+        list.innerHTML = '';
+        
+        if (appointments.length === 0) {
+            list.innerHTML = `<li><span style="color:var(--slate-500)">No appointments scheduled.</span></li>`;
+            return;
+        }
+        
+        appointments.slice().sort((a,b) => a.date.localeCompare(b.date)).forEach(a => {
+            const li = document.createElement('li');
+            li.innerHTML = `
+                <div class="appt-info">
+                    <strong>${a.title}</strong>
+                    <span>Client: ${a.client}</span>
+                </div>
+                <div class="appt-date-badge">
+                    <span>${a.date}</span><br>
+                    <span style="font-size:0.7rem; opacity:0.8;">${a.time}</span>
+                </div>
+            `;
+            list.appendChild(li);
+        });
+    }
+
+    window.submitAppointmentForm = function() {
+        const clientName = document.getElementById('appt-client-select').value;
+        const title = document.getElementById('appt-title').value.trim();
+        const date = document.getElementById('appt-date').value;
+        const time = document.getElementById('appt-time').value;
+
+        const newAppt = {
+            id: Date.now(),
+            client: clientName,
+            title: title,
+            date: date,
+            time: time,
+            type: "Consultation"
+        };
+
+        appointments.push(newAppt);
+        localStorage.setItem(APPOINTMENTS_KEY, JSON.stringify(appointments));
+        
+        renderCalendarDays();
+        renderAppointmentsList();
+        showToast("New meeting consultation scheduled!");
+        
+        document.getElementById('add-appointment-form').reset();
+    }
+
+    // 11. Listen to LocalStorage updates from Client Portal!
     window.addEventListener('storage', (e) => {
         if (e.key === CLIENTS_KEY) {
             clients = JSON.parse(e.newValue);
@@ -679,6 +820,11 @@ For Consultant: _______________________`;
         if (e.key === CONTRACTS_KEY) {
             contracts = JSON.parse(e.newValue);
         }
+        if (e.key === APPOINTMENTS_KEY) {
+            appointments = JSON.parse(e.newValue || '[]');
+            renderCalendarDays();
+            renderAppointmentsList();
+        }
     });
 
     // Startup Initializations
@@ -687,4 +833,6 @@ For Consultant: _______________________`;
     renderOverviewCases();
     populateSelectors();
     updateDashboardMetrics();
+    renderCalendarDays();
+    renderAppointmentsList();
 });

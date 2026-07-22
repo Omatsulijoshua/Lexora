@@ -6,6 +6,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const CASES_KEY = 'lexora_cases_db';
     const INVOICES_KEY = 'lexora_invoices_db';
     const CONTRACTS_KEY = 'lexora_contracts_db';
+    const APPOINTMENTS_KEY = 'lexora_appointments_db';
 
     // 2. Default Seed Data (used if localStorage is empty)
     const defaultClients = [
@@ -32,12 +33,18 @@ document.addEventListener('DOMContentLoaded', () => {
         { id: 8002, client: "Nexus Venture Fund", title: "Attorney Retainer Engagement", type: "retainer", status: "Signed", content: `ATTORNEY RETAINER AGREEMENT\n---------------------------\nThis Engagement Contract assigns corporate services to Nexus Venture Fund at a rate of $350/hour.` }
     ];
 
+    const defaultAppointments = [
+        { id: 7001, client: "Apex Biotech Corp", title: "Series A Legal Audit", date: "2026-07-23", time: "10:00", type: "Consultation" },
+        { id: 7002, client: "Nexus Venture Fund", title: "Bylaws Review Advisory", date: "2026-07-24", time: "14:00", type: "Hearing" }
+    ];
+
     // Seed database if empty
     function initializeStorage() {
         if (!localStorage.getItem(CLIENTS_KEY)) localStorage.setItem(CLIENTS_KEY, JSON.stringify(defaultClients));
         if (!localStorage.getItem(CASES_KEY)) localStorage.setItem(CASES_KEY, JSON.stringify(defaultCases));
         if (!localStorage.getItem(INVOICES_KEY)) localStorage.setItem(INVOICES_KEY, JSON.stringify(defaultInvoices));
         if (!localStorage.getItem(CONTRACTS_KEY)) localStorage.setItem(CONTRACTS_KEY, JSON.stringify(defaultContracts));
+        if (!localStorage.getItem(APPOINTMENTS_KEY)) localStorage.setItem(APPOINTMENTS_KEY, JSON.stringify(defaultAppointments));
     }
     initializeStorage();
 
@@ -46,6 +53,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let cases = JSON.parse(localStorage.getItem(CASES_KEY));
     let invoices = JSON.parse(localStorage.getItem(INVOICES_KEY));
     let contracts = JSON.parse(localStorage.getItem(CONTRACTS_KEY));
+    let appointments = JSON.parse(localStorage.getItem(APPOINTMENTS_KEY));
 
     // 3. Inject Logo Icons
     const logoSlots = ['login-logo-icon', 'sidebar-logo-icon'];
@@ -102,6 +110,7 @@ document.addEventListener('DOMContentLoaded', () => {
         renderOverviewMilestones();
         renderClientInvoices();
         renderClientDocuments();
+        renderClientAppointmentsList();
         showToast(`Secure session authorized for ${clientName}`);
         
         lucide.createIcons();
@@ -125,6 +134,7 @@ document.addEventListener('DOMContentLoaded', () => {
             renderOverviewMilestones();
             renderClientInvoices();
             renderClientDocuments();
+            renderClientAppointmentsList();
             lucide.createIcons();
         }, 100);
     }
@@ -475,9 +485,62 @@ document.addEventListener('DOMContentLoaded', () => {
         showToast(`Initiating download for: ${title}.pdf`);
     };
 
-    // 10. Listen to LocalStorage updates from Lawyer Dashboard!
+    // 10. Appointments Scheduling and List renders
+    window.renderClientAppointmentsList = function() {
+        const list = document.getElementById('client-appointments-list');
+        if (!list) return;
+        list.innerHTML = '';
+        
+        const clientAppts = appointments.filter(a => a.client === activeClient);
+        
+        if (clientAppts.length === 0) {
+            list.innerHTML = `<li><span style="color:var(--slate-500)">No appointments scheduled.</span></li>`;
+            return;
+        }
+        
+        clientAppts.slice().sort((a,b) => a.date.localeCompare(b.date)).forEach(a => {
+            const li = document.createElement('li');
+            li.innerHTML = `
+                <div class="appt-info">
+                    <strong>${a.title}</strong>
+                    <span>Status: Confirmed</span>
+                </div>
+                <div class="appt-date-badge">
+                    <span>${a.date}</span><br>
+                    <span style="font-size:0.7rem; opacity:0.8;">${a.time}</span>
+                </div>
+            `;
+            list.appendChild(li);
+        });
+    }
+
+    window.submitClientBookingForm = function() {
+        const type = document.getElementById('book-appt-type').value;
+        const date = document.getElementById('book-appt-date').value;
+        const time = document.getElementById('book-appt-time').value;
+        const notes = document.getElementById('book-appt-notes').value.trim();
+        
+        const newAppt = {
+            id: Date.now(),
+            client: activeClient,
+            title: `${type} (${notes || 'No notes'})`,
+            date: date,
+            time: time,
+            type: "Consultation"
+        };
+        
+        // Push and sync state
+        appointments.push(newAppt);
+        localStorage.setItem(APPOINTMENTS_KEY, JSON.stringify(appointments));
+        
+        renderClientAppointmentsList();
+        showToast("Consultation requested successfully!");
+        
+        document.getElementById('book-appointment-form').reset();
+    }
+
+    // 11. Listen to LocalStorage updates from Lawyer Dashboard!
     window.addEventListener('storage', (e) => {
-        // Reload parameters if shared keys change
         if (e.key === CASES_KEY) {
             cases = JSON.parse(e.newValue);
             renderOverviewMilestones();
@@ -492,7 +555,10 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         if (e.key === CLIENTS_KEY) {
             clients = JSON.parse(e.newValue);
-            renderClientsTable();
+        }
+        if (e.key === APPOINTMENTS_KEY) {
+            appointments = JSON.parse(e.newValue || '[]');
+            renderClientAppointmentsList();
         }
     });
 

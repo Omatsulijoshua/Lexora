@@ -43,6 +43,9 @@
         <a href="#" class="menu-item" data-tab="tab-aidraft">
           <i data-lucide="brain-circuit"></i> AI Drafting
         </a>
+        <a href="#" class="menu-item" data-tab="tab-calendar">
+          <i data-lucide="calendar"></i> Appointments
+        </a>
       </div>
 
       <div class="sidebar-footer">
@@ -348,6 +351,69 @@
                 </button>
               </div>
               <textarea class="editor-textarea" id="draft-textbox" readonly placeholder="// Click 'Synthesize Document' to run Lexora Legal AI compiler..."></textarea>
+            </div>
+
+          </div>
+        </section>
+
+        <!-- View 6: Calendar Appointments -->
+        <section class="tab-view" id="tab-calendar">
+          <div class="calendar-layout-grid">
+            
+            <!-- Left grid: interactive calendar month grid -->
+            <div class="dashboard-panel calendar-main-panel">
+              <div class="panel-header" style="margin-bottom: 1rem;">
+                <h3>Appointments Calendar</h3>
+                <div style="display:flex; gap:0.5rem;">
+                  <button class="btn btn-secondary btn-small" onclick="showPrevMonth()">&lt;</button>
+                  <span id="calendar-month-name" style="font-weight:700; min-width:110px; text-align:center; display:inline-block; line-height:2.2;">July 2026</span>
+                  <button class="btn btn-secondary btn-small" onclick="showNextMonth()">&gt;</button>
+                </div>
+              </div>
+              
+              <div class="calendar-grid-header">
+                <span>Sun</span><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span>
+              </div>
+              <div class="calendar-grid-days" id="calendar-days-container">
+                <!-- Generated dynamically -->
+              </div>
+            </div>
+
+            <!-- Right list: Appointments scheduler form and list -->
+            <div class="dashboard-panel calendar-schedule-panel">
+              <div class="panel-header">
+                <h3>Schedule Hearing / Consultation</h3>
+              </div>
+              <form id="add-appointment-form" onsubmit="event.preventDefault(); submitAppointmentForm();" style="display:flex; flex-direction:column; gap:1rem;">
+                <div class="form-group">
+                  <label for="appt-client-select">Client Name</label>
+                  <select id="appt-client-select" required>
+                    <!-- Populated dynamically -->
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label for="appt-title">Meeting Purpose</label>
+                  <input type="text" id="appt-title" placeholder="Case Strategy Session" required>
+                </div>
+                <div class="form-grid-2">
+                  <div class="form-group">
+                    <label for="appt-date">Select Date</label>
+                    <input type="date" id="appt-date" value="2026-07-25" required>
+                  </div>
+                  <div class="form-group">
+                    <label for="appt-time">Meeting Time</label>
+                    <input type="time" id="appt-time" value="10:00" required>
+                  </div>
+                </div>
+                <button type="submit" class="btn btn-gold btn-full">Schedule Appointment</button>
+              </form>
+
+              <div class="appointments-list-box" style="margin-top:2rem;">
+                <h4>Scheduled Events</h4>
+                <ul class="appointments-list" id="dashboard-appointments-list">
+                  <!-- Populated dynamically -->
+                </ul>
+              </div>
             </div>
 
           </div>

@@ -67,6 +67,9 @@
         <a href="#" class="menu-item" data-tab="tab-documents">
           <i data-lucide="file-text"></i> Document Vault
         </a>
+        <a href="#" class="menu-item" data-tab="tab-calendar">
+          <i data-lucide="calendar"></i> Appointments
+        </a>
       </div>
 
       <div class="sidebar-footer">
@@ -195,6 +198,59 @@
                 <!-- Injected dynamically -->
               </tbody>
             </table>
+          </div>
+        </section>
+
+        <!-- View 4: Calendar Booking (Client) -->
+        <section class="tab-view" id="tab-calendar">
+          <div class="calendar-layout-grid">
+            
+            <!-- Left panel: client booking form -->
+            <div class="dashboard-panel calendar-schedule-panel">
+              <div class="panel-header">
+                <h3>Request Consultation / Meeting</h3>
+                <p>Choose an available appointment type and request a consultation slot with your legal representative.</p>
+              </div>
+              <form id="book-appointment-form" onsubmit="event.preventDefault(); submitClientBookingForm();" style="display:flex; flex-direction:column; gap:1.2rem; margin-top:1.5rem;">
+                <div class="form-group">
+                  <label for="book-appt-type">Consultation Type</label>
+                  <select id="book-appt-type" required>
+                    <option value="Case Update Review">Case Update Review (30 min)</option>
+                    <option value="Document Intake Consultation">Document Intake Consultation (45 min)</option>
+                    <option value="Discovery & Deposition Strategy">Discovery & Deposition Strategy (60 min)</option>
+                    <option value="Initial Project Strategy">Initial Project Strategy (30 min)</option>
+                  </select>
+                </div>
+                <div class="form-grid-2">
+                  <div class="form-group">
+                    <label for="book-appt-date">Select Date</label>
+                    <input type="date" id="book-appt-date" value="2026-07-25" required>
+                  </div>
+                  <div class="form-group">
+                    <label for="book-appt-time">Preferred Time</label>
+                    <input type="time" id="book-appt-time" value="14:00" required>
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label for="book-appt-notes">Brief Notes / Context</label>
+                  <input type="text" id="book-appt-notes" placeholder="e.g. Reviewing drafted NDA clauses together.">
+                </div>
+                <button type="submit" class="btn btn-gold btn-full">Submit Booking Request</button>
+              </form>
+            </div>
+
+            <!-- Right panel: scheduled events list -->
+            <div class="dashboard-panel" style="align-self: start;">
+              <div class="panel-header">
+                <h3>Your Scheduled Events</h3>
+              </div>
+              <div class="appointments-list-box" style="margin-top: 1rem;">
+                <ul class="appointments-list" id="client-appointments-list">
+                  <!-- Populated dynamically -->
+                </ul>
+              </div>
+            </div>
+
           </div>
         </section>
 
