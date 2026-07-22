@@ -43,18 +43,51 @@ document.addEventListener('DOMContentLoaded', () => {
     let invoices = JSON.parse(localStorage.getItem(INVOICES_KEY));
     let contracts = JSON.parse(localStorage.getItem(CONTRACTS_KEY));
 
-    // 2. Parse URL Parameters for Multi-Tenant Setup
+    // 2. Parse URL and Setup Firm Branding
+    const DETAILS_KEY = 'lexora_firm_details_db';
+    const defaultDetails = {
+        firm: "Omatsuli Legal Associates",
+        practice: "Corporate Law Practice",
+        address: "120 Silicon Valley Blvd, Suite 400",
+        phone: "+1 (555) 898-0320",
+        email: "billing@lexora.app"
+    };
+
+    if (!localStorage.getItem(DETAILS_KEY)) {
+        localStorage.setItem(DETAILS_KEY, JSON.stringify(defaultDetails));
+    }
+
     const urlParams = new URLSearchParams(window.location.search);
-    const firmName = urlParams.get('firm') || 'Omatsuli Legal Associates';
-    const practiceArea = urlParams.get('practice') || 'Corporate Law Practice';
+    const qFirm = urlParams.get('firm');
+    const qPractice = urlParams.get('practice');
     const staffInvites = urlParams.get('staff') || '';
 
-    // Update Header Display
-    document.getElementById('display-firm-name').textContent = firmName.toUpperCase();
-    document.getElementById('display-practice-area').textContent = `${practiceArea} Workspace`;
-    
-    // Set Avatar Initial
-    document.getElementById('user-avatar').textContent = firmName.charAt(0).toUpperCase();
+    let firmDetails = JSON.parse(localStorage.getItem(DETAILS_KEY));
+    if (qFirm || qPractice) {
+        if (qFirm) firmDetails.firm = qFirm;
+        if (qPractice) firmDetails.practice = qPractice;
+        localStorage.setItem(DETAILS_KEY, JSON.stringify(firmDetails));
+    }
+
+    window.applyFirmBranding = function() {
+        const details = JSON.parse(localStorage.getItem(DETAILS_KEY)) || defaultDetails;
+        
+        document.getElementById('display-firm-name').textContent = details.firm.toUpperCase();
+        document.getElementById('display-practice-area').textContent = `${details.practice} Workspace`;
+        document.getElementById('user-avatar').textContent = details.firm.charAt(0).toUpperCase();
+
+        const setFirm = document.getElementById('settings-firm-name');
+        if (setFirm) setFirm.value = details.firm;
+        const setPrac = document.getElementById('settings-practice-area');
+        if (setPrac) setPrac.value = details.practice;
+        const setAddr = document.getElementById('settings-firm-address');
+        if (setAddr) setAddr.value = details.address;
+        const setPhone = document.getElementById('settings-firm-phone');
+        if (setPhone) setPhone.value = details.phone;
+        const setEmail = document.getElementById('settings-firm-email');
+        if (setEmail) setEmail.value = details.email;
+    }
+    applyFirmBranding();
 
     // Populate Staff widget list
     const staffList = document.getElementById('portal-staff-list');
@@ -657,6 +690,13 @@ For Consultant: _______________________`;
 
         const outstandingMetric = document.getElementById('metric-outstanding');
         if (outstandingMetric) outstandingMetric.textContent = `$${outstandingSum.toLocaleString()}`;
+
+        // Reports metrics
+        const reportTrust = document.getElementById('report-deposited-trust');
+        if (reportTrust) reportTrust.textContent = `$${trustSum.toLocaleString()}`;
+
+        const reportOut = document.getElementById('report-outstanding-billed');
+        if (reportOut) reportOut.textContent = `$${outstandingSum.toLocaleString()}`;
     }
 
     // 10. Calendar & Appointments State Setup
@@ -825,7 +865,24 @@ For Consultant: _______________________`;
             renderCalendarDays();
             renderAppointmentsList();
         }
+        if (e.key === DETAILS_KEY) {
+            applyFirmBranding();
+        }
     });
+
+    window.submitSettingsForm = function() {
+        const firm = document.getElementById('settings-firm-name').value.trim();
+        const practice = document.getElementById('settings-practice-area').value.trim();
+        const address = document.getElementById('settings-firm-address').value.trim();
+        const phone = document.getElementById('settings-firm-phone').value.trim();
+        const email = document.getElementById('settings-firm-email').value.trim();
+        
+        const newDetails = { firm, practice, address, phone, email };
+        localStorage.setItem(DETAILS_KEY, JSON.stringify(newDetails));
+        
+        applyFirmBranding();
+        showToast("Workspace branding configurations saved!");
+    }
 
     // Startup Initializations
     renderClientsTable();

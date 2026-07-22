@@ -46,6 +46,12 @@
         <a href="#" class="menu-item" data-tab="tab-calendar">
           <i data-lucide="calendar"></i> Appointments
         </a>
+        <a href="#" class="menu-item" data-tab="tab-reports">
+          <i data-lucide="bar-chart-3"></i> Reports
+        </a>
+        <a href="#" class="menu-item" data-tab="tab-settings">
+          <i data-lucide="settings"></i> Firm Settings
+        </a>
       </div>
 
       <div class="sidebar-footer">
@@ -416,6 +422,111 @@
               </div>
             </div>
 
+          </div>
+        </section>
+
+        <!-- View 7: Reports & Analytics -->
+        <section class="tab-view" id="tab-reports">
+          <div class="reports-layout-grid">
+            
+            <!-- Left panel: case analytics -->
+            <div class="dashboard-panel">
+              <div class="panel-header">
+                <h3>Firm Analytics Overview</h3>
+                <span class="badge-status active">July 2026</span>
+              </div>
+              <div class="analytics-chart-container" style="margin-top: 1.5rem;">
+                <h4>Case Distributions by Specialty</h4>
+                <div class="custom-bar-chart" style="margin-top: 1rem; display:flex; flex-direction:column; gap:1.25rem;">
+                  
+                  <div class="chart-bar-group">
+                    <div style="display:flex; justify-content:space-between; font-size:0.8rem; font-weight:600; margin-bottom:0.25rem;">
+                      <span>Corporate & Venture Capital</span>
+                      <span>58%</span>
+                    </div>
+                    <div class="bar-bg"><div class="bar-fill" style="width: 58%; background: var(--gold);"></div></div>
+                  </div>
+                  
+                  <div class="chart-bar-group">
+                    <div style="display:flex; justify-content:space-between; font-size:0.8rem; font-weight:600; margin-bottom:0.25rem;">
+                      <span>Intellectual Property & Patents</span>
+                      <span>27%</span>
+                    </div>
+                    <div class="bar-bg"><div class="bar-fill" style="width: 27%; background: var(--champagne);"></div></div>
+                  </div>
+                  
+                  <div class="chart-bar-group">
+                    <div style="display:flex; justify-content:space-between; font-size:0.8rem; font-weight:600; margin-bottom:0.25rem;">
+                      <span>Real Estate Transactions</span>
+                      <span>15%</span>
+                    </div>
+                    <div class="bar-bg"><div class="bar-fill" style="width: 15%; background: var(--slate-600);"></div></div>
+                  </div>
+
+                </div>
+              </div>
+            </div>
+
+            <!-- Right panel: revenue ledger breakdowns -->
+            <div class="dashboard-panel" style="align-self: start;">
+              <div class="panel-header">
+                <h3>Trust Account Performance</h3>
+              </div>
+              <div class="revenue-summary-list" style="margin-top: 1rem; display:flex; flex-direction:column; gap:1rem;">
+                <div class="revenue-row" style="display:flex; justify-content:space-between; border-bottom:1px solid rgba(255,255,255,0.04); padding-bottom:0.75rem;">
+                  <span style="font-size:0.9rem; color:var(--slate-500)">Total Trust Cap Limit</span>
+                  <strong style="color:var(--white)">$150,000.00</strong>
+                </div>
+                <div class="revenue-row" style="display:flex; justify-content:space-between; border-bottom:1px solid rgba(255,255,255,0.04); padding-bottom:0.75rem;">
+                  <span style="font-size:0.9rem; color:var(--slate-500)">Current Deposited Funds</span>
+                  <strong class="gold-text" id="report-deposited-trust">$45,000.00</strong>
+                </div>
+                <div class="revenue-row" style="display:flex; justify-content:space-between; border-bottom:1px solid rgba(255,255,255,0.04); padding-bottom:0.75rem;">
+                  <span style="font-size:0.9rem; color:var(--slate-500)">Outstanding Billed Invoices</span>
+                  <strong style="color:var(--white)" id="report-outstanding-billed">$5,700</strong>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </section>
+
+        <!-- View 8: Workspace Settings -->
+        <section class="tab-view" id="tab-settings">
+          <div class="dashboard-panel" style="max-width: 600px; margin: 0 auto;">
+            <div class="panel-header" style="margin-bottom: 1.5rem;">
+              <h3>Workspace Settings</h3>
+              <p style="font-size:0.8rem; color:var(--slate-500)">Customize workspace headers and public firm branding metadata variables.</p>
+            </div>
+            
+            <form id="settings-branding-form" onsubmit="event.preventDefault(); submitSettingsForm();" style="display:flex; flex-direction:column; gap:1.25rem;">
+              <div class="form-group">
+                <label for="settings-firm-name">Law Firm Name</label>
+                <input type="text" id="settings-firm-name" value="Omatsuli Legal Associates" required>
+              </div>
+              <div class="form-group">
+                <label for="settings-practice-area">Primary Practice Specialty</label>
+                <input type="text" id="settings-practice-area" value="Corporate Law Practice" required>
+              </div>
+              <div class="form-group">
+                <label for="settings-firm-address">Office Headquarters Address</label>
+                <input type="text" id="settings-firm-address" value="120 Silicon Valley Blvd, Suite 400" required>
+              </div>
+              <div class="form-grid-2">
+                <div class="form-group">
+                  <label for="settings-firm-phone">Telephone Hotline</label>
+                  <input type="text" id="settings-firm-phone" value="+1 (555) 898-0320" required>
+                </div>
+                <div class="form-group">
+                  <label for="settings-firm-email">Billing Support Email</label>
+                  <input type="email" id="settings-firm-email" value="billing@lexora.app" required>
+                </div>
+              </div>
+              
+              <div class="form-group" style="margin-top: 1rem; border-top: var(--border-standard); padding-top: 1.25rem;">
+                <button type="submit" class="btn btn-gold">Save Branding Configurations</button>
+              </div>
+            </form>
           </div>
         </section>
 

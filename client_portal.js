@@ -55,7 +55,31 @@ document.addEventListener('DOMContentLoaded', () => {
     let contracts = JSON.parse(localStorage.getItem(CONTRACTS_KEY));
     let appointments = JSON.parse(localStorage.getItem(APPOINTMENTS_KEY));
 
-    // 3. Inject Logo Icons
+    // 3. Setup Firm Details Branding
+    const DETAILS_KEY = 'lexora_firm_details_db';
+    const defaultDetails = {
+        firm: "Omatsuli Legal Associates",
+        practice: "Corporate Law Practice",
+        address: "120 Silicon Valley Blvd, Suite 400",
+        phone: "+1 (555) 898-0320",
+        email: "billing@lexora.app"
+    };
+
+    if (!localStorage.getItem(DETAILS_KEY)) {
+        localStorage.setItem(DETAILS_KEY, JSON.stringify(defaultDetails));
+    }
+
+    function applyFirmBranding() {
+        const details = JSON.parse(localStorage.getItem(DETAILS_KEY)) || defaultDetails;
+        const displayHost = document.getElementById('display-firm-host');
+        if (displayHost) displayHost.textContent = details.firm.toUpperCase();
+        
+        const payFirm = document.getElementById('pay-firm-name');
+        if (payFirm) payFirm.textContent = details.firm.toUpperCase();
+    }
+    applyFirmBranding();
+
+    // 4. Inject Logo Icons
     const logoSlots = ['login-logo-icon', 'sidebar-logo-icon'];
     fetch('assets/logo_icon_light.svg')
         .then(res => res.text())
@@ -559,6 +583,9 @@ document.addEventListener('DOMContentLoaded', () => {
         if (e.key === APPOINTMENTS_KEY) {
             appointments = JSON.parse(e.newValue || '[]');
             renderClientAppointmentsList();
+        }
+        if (e.key === DETAILS_KEY) {
+            applyFirmBranding();
         }
     });
 
