@@ -10,8 +10,11 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Serve static frontend pages from root directory
-app.use(express.static(path.join(__dirname, '.')));
+// Serve static logo assets
+app.use('/assets', express.static(path.join(__dirname, '../assets')));
+
+// Serve Super Admin Panel static files
+app.use('/admin', express.static(path.join(__dirname, '../super_admin')));
 
 // Setup PostgreSQL client Pool connected to Neon
 const pool = new Pool({
@@ -56,6 +59,64 @@ app.get('/api/health', async (req, res) => {
     } catch (err) {
         console.error(err);
         res.status(500).json({ error: 'Database connection failed' });
+    }
+});
+
+// ==========================================
+// Super Admin Endpoints
+// ==========================================
+app.get('/api/admin/stats', async (req, res) => {
+    try {
+        const tenantCount = await pool.query('SELECT COUNT(*) FROM tenants');
+        const userCount = await pool.query('SELECT COUNT(*) FROM users');
+        const caseCount = await pool.query('SELECT COUNT(*) FROM cases');
+        const invoiceCount = await pool.query('SELECT COUNT(*) FROM invoices');
+        const clientCount = await pool.query('SELECT COUNT(*) FROM clients');
+        const totalBilled = await pool.query('SELECT SUM(amount) FROM invoices');
+
+        res.json({
+            tenants: parseInt(tenantCount.rows[0].count),
+            users: parseInt(userCount.rows[0].count),
+            cases: parseInt(caseCount.rows[0].count),
+            invoices: parseInt(invoiceCount.rows[0].count),
+            clients: parseInt(clientCount.rows[0].count),
+            revenue: parseFloat(totalBilled.rows[0].sum || 0)
+        });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.get('/api/admin/tenants', async (req, res) => {
+    try {
+        const result = await pool.query(`
+            SELECT t.id, t.name, t.created_at, 
+                   COUNT(DISTINCT u.id) as user_count,
+                   COUNT(DISTINCT c.id) as client_count,
+                   COUNT(DISTINCT cs.id) as case_count
+            FROM tenants t
+            LEFT JOIN users u ON t.id = u.tenant_id
+            LEFT JOIN clients c ON t.id = c.tenant_id
+            LEFT JOIN cases cs ON t.id = cs.tenant_id
+            GROUP BY t.id
+            ORDER BY t.id ASC
+        `);
+        res.json(result.rows);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.delete('/api/admin/tenants/:id', async (req, res) => {
+    const { id } = req.params;
+    try {
+        await pool.query('DELETE FROM tenants WHERE id = $1', [id]);
+        res.json({ success: true, message: `Tenant ID ${id} deleted successfully.` });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: err.message });
     }
 });
 
@@ -285,7 +346,6 @@ app.post('/api/payments/create-checkout', verifyToken, async (req, res) => {
             return res.json({ success: true, sandbox: true });
         }
 
-        // Create Vercel/Render host compatible absolute redirections
         const session = await stripe.checkout.sessions.create({
             payment_method_types: ['card'],
             line_items: [{
@@ -299,8 +359,8 @@ app.post('/api/payments/create-checkout', verifyToken, async (req, res) => {
                 quantity: 1,
             }],
             mode: 'payment',
-            success_url: `${req.headers.origin}/client_portal.html?payment=success&invoiceId=${invoiceId}&amount=${amount}&clientName=${encodeURIComponent(clientName)}`,
-            cancel_url: `${req.headers.origin}/client_portal.html?payment=cancel`,
+            success_url: `${req.headers.origin}/portal?payment=success&invoiceId=${invoiceId}&amount=${amount}&clientName=${encodeURIComponent(clientName)}`,
+            cancel_url: `${req.headers.origin}/portal?payment=cancel`,
         });
         
         res.json({ url: session.url });
@@ -489,9 +549,9 @@ app.post('/api/settings', verifyToken, async (req, res) => {
     }
 });
 
-// Catch-all route to serve the marketing landing page on root requests
+// Catch-all route to return JSON API details
 app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, 'landing.html'));
+    res.json({ message: "Lexora SaaS Backend API Server" });
 });
 
 // Start Express Listener only when run directly

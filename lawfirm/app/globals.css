@@ -1,0 +1,40 @@
+@import "tailwindcss";
+
+:root {
+  /* Color Palette */
+  --navy: #081A33;
+  --navy-light: #102A43;
+  --navy-rgb: 8, 26, 51;
+  --gold: #C6A15B;
+  --gold-rgb: 198, 161, 91;
+  --champagne: #D8C08C;
+  --charcoal: #1C2430;
+  --charcoal-rgb: 28, 36, 48;
+  --white: #FFFFFF;
+  --slate-50: #F8FAFC;
+  --slate-100: #F1F5F9;
+  --slate-200: #E2E8F0;
+  --slate-300: #CBD5E1;
+  --slate-400: #94A3B8;
+  --slate-500: #64748B;
+  --slate-600: #475569;
+  --slate-700: #334155;
+  --slate-800: #1E293B;
+  --slate-900: #0F172A;
+  
+  /* App Sizing and Spacing */
+  --max-width: 1200px;
+  --border-radius: 12px;
+  --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  --border-glow: 1px solid rgba(198, 161, 91, 0.2);
+  --border-standard: 1px solid rgba(255, 255, 255, 0.08);
+
+  /* Next.js Defaults Override */
+  --background: #090a0f;
+  --foreground: #ffffff;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+}

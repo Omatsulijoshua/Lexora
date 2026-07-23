@@ -1,7 +1,7 @@
 {
-  "name": "lexora-saas",
+  "name": "lexora-backend",
   "version": "1.0.0",
-  "description": "Lexora - All-in-One Legal Tech SaaS Platform Workspace",
+  "description": "Lexora SaaS Backend",
   "main": "server.js",
   "scripts": {
     "start": "node migrate.js && node server.js",

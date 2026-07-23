@@ -1,0 +1,169 @@
+/* Lexora Brand Guidelines Style Sheet */
+
+.brand-guidelines-page {
+  background-color: var(--background);
+  min-height: 100vh;
+  padding: 3rem 1.5rem;
+  color: var(--foreground);
+}
+
+.brand-layout-container {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.brand-header {
+  margin-bottom: 3rem;
+  border-bottom: 1px solid var(--border-standard);
+  padding-bottom: 2rem;
+}
+
+.brand-header .back-link {
+  color: var(--slate-400);
+  text-decoration: none;
+  font-size: 0.9rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: color 0.25s ease;
+  margin-bottom: 1.5rem;
+}
+
+.brand-header .back-link:hover {
+  color: var(--gold);
+}
+
+.brand-title-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.brand-title-icon {
+  color: var(--gold);
+  width: 48px;
+  height: 48px;
+  margin-bottom: 1rem;
+}
+
+.brand-header h1 {
+  font-family: 'Outfit', sans-serif;
+  font-size: 2.5rem;
+  font-weight: 800;
+  margin: 0;
+  letter-spacing: -0.5px;
+}
+
+.brand-header p {
+  color: var(--slate-400);
+  font-size: 1.1rem;
+  margin: 0;
+}
+
+.brand-section {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.brand-section h2 {
+  font-family: 'Outfit', sans-serif;
+  font-size: 1.75rem;
+  font-weight: 700;
+  margin: 0;
+}
+
+.section-description {
+  color: var(--slate-500);
+  font-size: 0.95rem;
+  margin: -1rem 0 1rem 0;
+}
+
+/* Assets grid */
+.assets-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 2rem;
+}
+
+.asset-card {
+  background: rgba(28, 36, 48, 0.4);
+  backdrop-filter: blur(12px);
+  border: var(--border-standard);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.3);
+  transition: transform 0.3s ease, border-color 0.3s ease;
+}
+
+.asset-card:hover {
+  transform: translateY(-4px);
+  border-color: rgba(198, 161, 91, 0.4);
+}
+
+.asset-preview-pane {
+  height: 200px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  position: relative;
+}
+
+.asset-preview-pane.dark-bg {
+  background-color: #0b0c10;
+  background-image: 
+    radial-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 0),
+    radial-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 0);
+  background-size: 20px 20px;
+  background-position: 0 0, 10px 10px;
+}
+
+.asset-preview-pane.light-bg {
+  background-color: #f8fafc;
+  background-image: 
+    radial-gradient(rgba(0, 0, 0, 0.03) 1px, transparent 0),
+    radial-gradient(rgba(0, 0, 0, 0.03) 1px, transparent 0);
+  background-size: 20px 20px;
+  background-position: 0 0, 10px 10px;
+}
+
+.asset-preview-pane.app-bg {
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+}
+
+.vector-image {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  transition: transform 0.3s ease;
+}
+
+.asset-card:hover .vector-image {
+  transform: scale(1.05);
+}
+
+.asset-meta-info {
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  border-top: var(--border-standard);
+}
+
+.asset-meta-info h3 {
+  font-family: 'Outfit', sans-serif;
+  font-size: 1.05rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.asset-meta-info span {
+  font-size: 0.8rem;
+  color: var(--slate-500);
+  font-family: monospace;
+}
+
+.asset-actions {
+  margin-top: 0.5rem;
+}

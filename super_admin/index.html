@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lexora - Super Admin Panel</title>
+  <!-- Google Fonts Outfit & Inter -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <!-- Stylesheets -->
+  <link rel="stylesheet" href="admin.css">
+</head>
+<body class="dark-theme">
+
+  <div class="admin-layout">
+    <!-- Sidebar Navigation -->
+    <aside class="admin-sidebar">
+      <div class="sidebar-brand">
+        <svg viewBox="0 0 200 200" style="width:32px; height:32px;" id="admin-logo-icon">
+          <!-- Injected dynamically -->
+        </svg>
+        <span>LEXORA</span>
+        <span class="badge-operator">SYSTEM</span>
+      </div>
+
+      <nav class="sidebar-menu">
+        <a href="#" class="menu-item active">
+          <i data-lucide="gauge"></i> Dashboard Overview
+        </a>
+        <a href="#" class="menu-item">
+          <i data-lucide="building-2"></i> Tenant Workspace Registry
+        </a>
+        <a href="#" class="menu-item">
+          <i data-lucide="shield-check"></i> SOC2 Security Audits
+        </a>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="operator-profile">
+          <div class="operator-avatar">OP</div>
+          <div class="operator-info">
+            <strong>System Operator</strong>
+            <span>Admin Node</span>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Workspace -->
+    <main class="admin-main">
+      <!-- Topbar Header -->
+      <header class="admin-topbar">
+        <h1>Global Systems Control</h1>
+        <div class="topbar-actions">
+          <span class="system-status-indicator">
+            <span class="status-pulse-dot"></span> System Live (Neon DB Connected)
+          </span>
+        </div>
+      </header>
+
+      <!-- Overview Cards Grid -->
+      <section class="admin-metrics-grid">
+        <div class="metric-card">
+          <div class="metric-header">
+            <span>ACTIVE WORKSPACES</span>
+            <i data-lucide="building"></i>
+          </div>
+          <h2 id="metric-tenants">0</h2>
+          <span class="metric-meta">Multi-tenant firms</span>
+        </div>
+        <div class="metric-card">
+          <div class="metric-header">
+            <span>REGISTERED USERS</span>
+            <i data-lucide="users"></i>
+          </div>
+          <h2 id="metric-users">0</h2>
+          <span class="metric-meta">Lawyers & Clients</span>
+        </div>
+        <div class="metric-card">
+          <div class="metric-header">
+            <span>OPEN CASES</span>
+            <i data-lucide="folder-kanban"></i>
+          </div>
+          <h2 id="metric-cases">0</h2>
+          <span class="metric-meta">Active litigation matters</span>
+        </div>
+        <div class="metric-card">
+          <div class="metric-header">
+            <span>SYSTEM REVENUE</span>
+            <i data-lucide="dollar-sign"></i>
+          </div>
+          <h2 id="metric-revenue">$0.00</h2>
+          <span class="metric-meta">Total invoices billed</span>
+        </div>
+      </section>
+
+      <!-- Tenant Workspace List Table -->
+      <section class="admin-panel-card">
+        <div class="panel-header">
+          <h3>Law Firm Database Registry</h3>
+          <p>Delete or monitor active multi-tenant SQL structures below.</p>
+        </div>
+        
+        <table class="admin-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Firm Workspace Name</th>
+              <th>Admin Init Date</th>
+              <th style="text-align: center;">Active Accounts</th>
+              <th style="text-align: center;">Active Clients</th>
+              <th style="text-align: center;">Total Cases</th>
+              <th style="text-align: right;">Workspace Operations</th>
+            </tr>
+          </thead>
+          <tbody id="tenants-table-body">
+            <!-- Dynamically populated -->
+          </tbody>
+        </table>
+      </section>
+    </main>
+  </div>
+
+  <!-- Toast Notification Alert -->
+  <div class="toast" id="toast">
+    <div class="toast-content">
+      <i data-lucide="info" class="toast-icon"></i>
+      <span id="toast-message">Initializing Control Panel...</span>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="admin.js"></script>
+</body>
+</html>
